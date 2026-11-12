@@ -1,0 +1,16 @@
+{
+  "name": "nexo-nuu-backend",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch src/index.js",
+    "start": "node src/index.js",
+    "db:init": "node src/scripts/initDb.js"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "dotenv": "^17.2.0",
+    "pg": "^8.16.0"
+  }
+}

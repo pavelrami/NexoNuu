@@ -1,0 +1,5 @@
+import { Link } from 'react-router-dom';
+
+export default function Voluntariado() {
+  return <section className="container inner-page"><span className="section-kicker">Módulo Conectar · Próximo incremento</span><h1>Participar como voluntario</h1><p className="page-intro">Nexo Ñuu permitirá registrar perfiles de colaboración con habilidades, región, disponibilidad y lenguas originarias, incluidas sus variantes cuando corresponda.</p><div className="feature-list"><article><h2>Registro responsable</h2><p>El registro será voluntario. Solo se solicitarán los datos necesarios y cada persona decidirá qué información compartir.</p></article><article><h2>Experiencia y lenguas</h2><p>Podrás indicar conocimientos relevantes, disponibilidad y las lenguas que declaras hablar. Las instituciones verificarán la pertinencia para sus actividades.</p></article><article><h2>Postulaciones</h2><p>Las instituciones confirmarán la participación. El sistema no asignará automáticamente voluntarios sin consentimiento.</p></article></div><Link to="/jornadas" className="btn btn-primary">Explorar jornadas</Link></section>;
+}
