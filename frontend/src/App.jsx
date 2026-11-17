@@ -10,6 +10,9 @@ import Login from './pages/Login.jsx';
 import Registro from './pages/Registro.jsx';
 import VerificarCorreo from './pages/VerificarCorreo.jsx';
 import MiEspacio from './pages/MiEspacio.jsx';
+import VerificarTelefono from './pages/VerificarTelefono.jsx';
+import OlvideContrasena from './pages/OlvideContrasena.jsx';
+import RestablecerContrasena from './pages/RestablecerContrasena.jsx';
 import { useAuth } from './context/AuthContext.jsx';
 
 function Private({ children }) {
@@ -28,6 +31,9 @@ export default function App() {
     <Route path="/iniciar-sesion" element={<Login/>}/>
     <Route path="/registro" element={<Registro/>}/>
     <Route path="/verificar-correo" element={<VerificarCorreo/>}/>
+    <Route path="/olvide-contrasena" element={<OlvideContrasena/>}/>
+    <Route path="/restablecer-contrasena" element={<RestablecerContrasena/>}/>
+    <Route path="/verificar-telefono" element={<Private><VerificarTelefono/></Private>}/>
     <Route path="/mi-espacio" element={<Private><MiEspacio/></Private>}/>
     <Route path="*" element={<Navigate to="/" replace/>}/>
   </Routes></main><Footer/></>;

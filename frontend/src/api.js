@@ -30,3 +30,10 @@ export const resendVerification = (correo) => authRequest('reenviar-verificacion
 export const login = (correo, password) => authRequest('login', { method: 'POST', payload: { correo, password } });
 export const authMe = () => authRequest('me');
 export const logout = () => authRequest('logout', { method: 'POST' });
+
+export const requestPasswordReset = (correo) => authRequest('solicitar-recuperacion', { method: 'POST', payload: { correo } });
+export const resetPassword = (token, password) => authRequest('restablecer-contrasena', { method: 'POST', payload: { token, password } });
+
+export const phoneStatus = () => authRequest('telefono/estado');
+export const requestPhoneCode = (telefono) => authRequest('telefono/solicitar-codigo', { method: 'POST', payload: { telefono } });
+export const verifyPhoneCode = (codigo) => authRequest('telefono/confirmar-codigo', { method: 'POST', payload: { codigo } });

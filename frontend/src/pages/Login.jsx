@@ -43,8 +43,9 @@ export default function Login() {
         <button type="submit" className="btn btn-primary" disabled={busy}>{busy ? 'Ingresando…' : 'Entrar'}</button>
       </form>
       {needsEmail && <button className="btn btn-outline" type="button" onClick={resend} disabled={busy}>Reenviar verificación</button>}
+      <p className="auth-switch"><Link to="/olvide-contrasena">¿Olvidaste tu contraseña?</Link></p>
       <p className="auth-switch">¿Aún no tienes cuenta? <Link to="/registro">Crear cuenta</Link></p>
-      <small className="auth-muted">La recuperación de contraseña y la verificación telefónica llegarán en la siguiente etapa.</small>
+      <small className="auth-muted">La verificación telefónica se incorporará en una etapa posterior.</small>
     </div>
   </section>;
 }

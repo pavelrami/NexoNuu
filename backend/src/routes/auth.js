@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { pool } from '../db.js';
 import { clearSessionCookie, hashPassword, makeToken, normalizeEmail, readCookie, sessionCookie, SESSION_MS, tokenHash, validEmail, validPassword, verifyPassword } from '../lib/security.js';
 import { limitRequests, sameOriginWrite } from '../lib/limits.js';
-import { sendVerificationEmail } from '../services/email.js';
+import { sendVerificationEmail, sendPasswordResetEmail } from '../services/email.js';
 
 const auth = Router();
 auth.use((_req, res, next) => {
@@ -167,6 +167,74 @@ auth.post('/logout', async (req, res) => {
   }
   res.set('Set-Cookie', clearSessionCookie());
   return res.json({ message: 'Sesión cerrada.' });
+});
+
+
+// Respuesta generica para no revelar si existe una cuenta.
+const recoveryMessage = 'Si existe una cuenta verificada con ese correo, recibiras instrucciones para recuperar el acceso.';
+auth.post('/solicitar-recuperacion', limitRequests({ prefix: 'recuperar', max: 4, windowMs: 60 * 60_000 }), async (req, res) => {
+  const email = normalizeEmail(req.body?.correo);
+  if (!validEmail(email)) return res.status(400).json({ code: 'CORREO_INVALIDO', message: 'Escribe un correo valido.' });
+  const client = await pool.connect();
+  let token;
+  try {
+    await client.query('BEGIN');
+    const found = await client.query(`SELECT id FROM usuarios
+      WHERE correo=$1 AND estado='activo' AND correo_verificado_en IS NOT NULL
+      FOR UPDATE`, [email]);
+    if (found.rowCount) {
+      const userId = found.rows[0].id;
+      const previous = await client.query(`SELECT creado_en FROM recuperaciones_password
+        WHERE usuario_id=$1 ORDER BY creado_en DESC LIMIT 1`, [userId]);
+      // No generar varios tokens durante el mismo minuto.
+      if (!previous.rowCount || Date.now() - new Date(previous.rows[0].creado_en).getTime() > 60_000) {
+        token = makeToken();
+        await client.query('DELETE FROM recuperaciones_password WHERE usuario_id=$1 AND usado_en IS NULL', [userId]);
+        await client.query(`INSERT INTO recuperaciones_password (usuario_id, token_hash, expira_en)
+          VALUES ($1, $2, now() + INTERVAL '30 minutes')`, [userId, tokenHash(token)]);
+      }
+    }
+    await client.query('COMMIT');
+  } catch (error) {
+    await client.query('ROLLBACK').catch(() => {});
+    console.error('Error de solicitud de recuperacion:', error.code || error.message);
+    return res.status(500).json({ code: 'RECUPERACION_FALLIDA', message: 'No fue posible procesar la solicitud.' });
+  } finally { client.release(); }
+  if (token) await sendPasswordResetEmail(email, token).catch(e => console.error('No pudo enviarse la recuperacion:', e.message));
+  return res.status(202).json({ message: recoveryMessage });
+});
+
+auth.post('/restablecer-contrasena', limitRequests({ prefix: 'restablecer', max: 10, windowMs: 15 * 60_000 }), async (req, res) => {
+  const { token, password } = req.body || {};
+  if (typeof token !== 'string' || !/^[A-Za-z0-9_-]{43}$/.test(token) || !validPassword(password)) {
+    return res.status(400).json({ code: 'DATOS_INVALIDOS', message: 'Enlace invalido o contrasena invalida (12 a 128 caracteres).' });
+  }
+  const passwordHash = await hashPassword(password);
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const result = await client.query(`SELECT r.id, r.usuario_id FROM recuperaciones_password r
+      INNER JOIN usuarios u ON u.id=r.usuario_id
+      WHERE r.token_hash=$1 AND r.usado_en IS NULL AND r.expira_en > now()
+        AND u.estado='activo' AND u.correo_verificado_en IS NOT NULL
+      FOR UPDATE OF r`, [tokenHash(token)]);
+    if (!result.rowCount) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ code: 'ENLACE_EXPIRADO', message: 'Este enlace ya se utilizo o expiro. Solicita otro.' });
+    }
+    const { id, usuario_id } = result.rows[0];
+    await client.query('UPDATE usuarios SET password_hash=$1 WHERE id=$2', [passwordHash, usuario_id]);
+    await client.query('UPDATE recuperaciones_password SET usado_en=now() WHERE id=$1', [id]);
+    await client.query('DELETE FROM recuperaciones_password WHERE usuario_id=$1 AND usado_en IS NULL', [usuario_id]);
+    await client.query('UPDATE sesiones_usuario SET revocado_en=now() WHERE usuario_id=$1 AND revocado_en IS NULL', [usuario_id]);
+    await client.query('COMMIT');
+    res.set('Set-Cookie', clearSessionCookie());
+    return res.json({ message: 'Contrasena actualizada. Inicia sesion con tu nueva contrasena.' });
+  } catch (error) {
+    await client.query('ROLLBACK').catch(() => {});
+    console.error('Error al restablecer contrasena:', error.code || error.message);
+    return res.status(500).json({ code: 'RESTABLECIMIENTO_FALLIDO', message: 'No fue posible actualizar la contrasena.' });
+  } finally { client.release(); }
 });
 
 export default auth;
