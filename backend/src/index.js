@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import { pool } from './db.js';
+import authRoutes from './routes/auth.js';
 
 const app = express();
 const port = Number(process.env.PORT || 3001);
@@ -16,6 +17,8 @@ app.get('/api/health', async (_req, res) => {
     res.json({ api: 'conectada', database: 'no_disponible' });
   }
 });
+
+app.use('/api/auth', authRoutes);
 
 // Por el momento solo expondremos informacion de jornadas publicadas y verificadas.
 app.get('/api/jornadas', async (_req, res) => {

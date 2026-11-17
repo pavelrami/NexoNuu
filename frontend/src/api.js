@@ -8,3 +8,25 @@ export async function getJornadas({ signal } = {}) {
   }
   return data.jornadas ?? [];
 }
+
+async function authRequest(path, { method = 'GET', payload } = {}) {
+  const response = await fetch(`/api/auth/${path}`, {
+    method,
+    credentials: 'same-origin',
+    headers: payload ? { 'Content-Type': 'application/json' } : {},
+    body: payload ? JSON.stringify(payload) : undefined,
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error(data.message || 'No se pudo completar la solicitud.');
+    error.code = data.code;
+    throw error;
+  }
+  return data;
+}
+export const register = (nombre, correo, password) => authRequest('registro', { method: 'POST', payload: { nombre, correo, password } });
+export const verifyEmail = (token) => authRequest('verificar-correo', { method: 'POST', payload: { token } });
+export const resendVerification = (correo) => authRequest('reenviar-verificacion', { method: 'POST', payload: { correo } });
+export const login = (correo, password) => authRequest('login', { method: 'POST', payload: { correo, password } });
+export const authMe = () => authRequest('me');
+export const logout = () => authRequest('logout', { method: 'POST' });
