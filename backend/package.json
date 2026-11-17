@@ -8,9 +8,10 @@
     "start": "node src/index.js",
     "db:init": "node src/scripts/initDb.js",
     "db:migrate:auth": "node src/scripts/migrateAuth.js",
-    "test": "node --test",
     "db:migrate:recovery": "node src/scripts/migrateRecovery.js",
-    "db:migrate:phone": "node src/scripts/migratePhone.js"
+    "db:migrate:phone": "node src/scripts/migratePhone.js",
+    "db:seed:voluntarios": "node src/scripts/seedVolunteerCatalogs.js",
+    "test": "node --test"
   },
   "dependencies": {
     "express": "^5.1.0",

@@ -10,6 +10,7 @@ import Login from './pages/Login.jsx';
 import Registro from './pages/Registro.jsx';
 import VerificarCorreo from './pages/VerificarCorreo.jsx';
 import MiEspacio from './pages/MiEspacio.jsx';
+import PerfilVoluntario from './pages/PerfilVoluntario.jsx';
 import VerificarTelefono from './pages/VerificarTelefono.jsx';
 import OlvideContrasena from './pages/OlvideContrasena.jsx';
 import RestablecerContrasena from './pages/RestablecerContrasena.jsx';
@@ -35,6 +36,7 @@ export default function App() {
     <Route path="/restablecer-contrasena" element={<RestablecerContrasena/>}/>
     <Route path="/verificar-telefono" element={<Private><VerificarTelefono/></Private>}/>
     <Route path="/mi-espacio" element={<Private><MiEspacio/></Private>}/>
+    <Route path="/mi-perfil-voluntario" element={<Private><PerfilVoluntario/></Private>}/>
     <Route path="*" element={<Navigate to="/" replace/>}/>
   </Routes></main><Footer/></>;
 }

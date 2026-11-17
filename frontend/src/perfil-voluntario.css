@@ -1,0 +1,20 @@
+.volunteer-form{display:flex;flex-direction:column;gap:22px;max-width:1050px}
+.volunteer-section{padding:25px;border:1px solid #e2edeb;border-radius:16px;background:#fff;box-shadow:0 8px 22px #09575008}
+.volunteer-section h2{font-size:21px;margin-bottom:13px}
+.volunteer-fields{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.volunteer-field{display:flex;flex-direction:column;gap:9px;min-width:0}
+.volunteer-field label{font-size:14px;font-weight:750;color:#163a40}
+.volunteer-field select,.volunteer-field textarea{font:inherit;font-size:15px;color:#163a40;width:100%;padding:12px;min-height:46px;background:#fff;border:1.5px solid #c4d8d5;border-radius:10px}
+.volunteer-field textarea{resize:vertical;line-height:1.55}
+.volunteer-field select:focus,.volunteer-field textarea:focus,.volunteer-check input:focus-visible{outline:2px solid #78c7b7;outline-offset:2px}
+.volunteer-field small{font-size:12px;color:#657679}
+.volunteer-skills{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.volunteer-check{border:1px solid #dceae7;background:#f8fbfa;display:flex;gap:12px;align-items:center;padding:12px 14px;border-radius:10px;font-size:14px;cursor:pointer;line-height:1.4}
+.volunteer-check input{width:18px;height:18px;accent-color:#075d60;flex:none}
+.volunteer-language-list{display:flex;flex-direction:column;gap:14px;margin:18px 0}
+.volunteer-language-row{display:grid;grid-template-columns:1fr 1fr .9fr auto;align-items:end;gap:12px;background:#f9fbfa;border:1px solid #e0eeeb;border-radius:12px;padding:14px}
+.volunteer-remove{height:46px}
+.volunteer-actions{display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+.volunteer-actions .btn{border:0;cursor:pointer}.volunteer-actions .auth-success{margin:0}
+@media(max-width:900px){.volunteer-language-row{grid-template-columns:1fr 1fr}.volunteer-remove{justify-self:start}}
+@media(max-width:620px){.volunteer-fields,.volunteer-skills,.volunteer-language-row{grid-template-columns:1fr}.volunteer-section{padding:19px}.volunteer-remove{justify-self:stretch}}

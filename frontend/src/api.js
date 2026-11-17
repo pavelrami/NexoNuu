@@ -37,3 +37,23 @@ export const resetPassword = (token, password) => authRequest('restablecer-contr
 export const phoneStatus = () => authRequest('telefono/estado');
 export const requestPhoneCode = (telefono) => authRequest('telefono/solicitar-codigo', { method: 'POST', payload: { telefono } });
 export const verifyPhoneCode = (codigo) => authRequest('telefono/confirmar-codigo', { method: 'POST', payload: { codigo } });
+
+// Incremento 3: datos privados del voluntario.
+async function volunteerRequest(path, { method = 'GET', payload } = {}) {
+  const response = await fetch(`/api/voluntarios/${path}`, {
+    method,
+    credentials: 'same-origin',
+    headers: payload ? { 'Content-Type': 'application/json' } : {},
+    body: payload ? JSON.stringify(payload) : undefined,
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error(data.message || 'No fue posible consultar el voluntariado.');
+    error.code = data.code;
+    throw error;
+  }
+  return data;
+}
+export const getVolunteerCatalogs = () => volunteerRequest('catalogos');
+export const getVolunteerProfile = () => volunteerRequest('me');
+export const saveVolunteerProfile = (perfil) => volunteerRequest('me', { method: 'PUT', payload: perfil });

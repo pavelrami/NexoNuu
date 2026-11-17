@@ -3,6 +3,7 @@ import express from 'express';
 import { pool } from './db.js';
 import authRoutes from './routes/auth.js';
 import phoneRoutes from './routes/phone.js';
+import volunteerRoutes from './routes/voluntarios.js';
 
 const app = express();
 const port = Number(process.env.PORT || 3001);
@@ -21,6 +22,7 @@ app.get('/api/health', async (_req, res) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/auth/telefono', phoneRoutes);
+app.use('/api/voluntarios', volunteerRoutes);
 
 // Por el momento solo expondremos informacion de jornadas publicadas y verificadas.
 app.get('/api/jornadas', async (_req, res) => {
