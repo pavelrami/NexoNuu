@@ -4,6 +4,10 @@ import { pool } from './db.js';
 import authRoutes from './routes/auth.js';
 import phoneRoutes from './routes/phone.js';
 import volunteerRoutes from './routes/voluntarios.js';
+import jornadasRoutes from './routes/jornadas.js';
+import postulacionesRoutes from './routes/postulaciones.js';
+import institucionesRoutes from './routes/instituciones.js';
+import adminRoutes from './routes/admin.js';
 
 const app = express();
 const port = Number(process.env.PORT || 3001);
@@ -24,30 +28,11 @@ app.use('/api/auth', authRoutes);
 app.use('/api/auth/telefono', phoneRoutes);
 app.use('/api/voluntarios', volunteerRoutes);
 
-// Por el momento solo expondremos informacion de jornadas publicadas y verificadas.
-app.get('/api/jornadas', async (_req, res) => {
-  if (!pool) return res.status(503).json({ code: 'BASE_NO_CONFIGURADA', message: 'La base de datos del prototipo todavia no esta configurada.' });
-  try {
-    const result = await pool.query(`
-      SELECT j.id, j.titulo, j.descripcion, j.inicio, j.fin,
-             c.nombre AS comunidad, c.municipio, c.region,
-             i.nombre AS institucion
-      FROM jornadas j
-      INNER JOIN instituciones i ON i.id = j.institucion_id
-      INNER JOIN comunidades c ON c.id = j.comunidad_id
-      WHERE j.estado = 'publicada'
-        AND i.estado_verificacion = 'verificada'
-        AND j.inicio >= CURRENT_TIMESTAMP
-      ORDER BY j.inicio ASC
-      LIMIT 30
-    `);
-    res.json({ jornadas: result.rows });
-  } catch (error) {
-    console.error('Fallo en /api/jornadas:', error.message);
-    if (error.code === '42P01') return res.status(503).json({ code: 'ESQUEMA_PENDIENTE', message: 'Debes instalar el esquema SQL inicial.' });
-    res.status(500).json({ code: 'CONSULTA_FALLIDA', message: 'No fue posible consultar las jornadas.' });
-  }
-});
+// Incremento 4.1: búsqueda pública de jornadas y sus filtros.
+app.use('/api/jornadas', jornadasRoutes);
+app.use('/api/postulaciones', postulacionesRoutes);
+app.use('/api/instituciones', institucionesRoutes);
+app.use('/api/admin', adminRoutes);
 
 app.use((req, res) => res.status(404).json({ code: 'NO_ENCONTRADO', message: 'Ruta no encontrada' }));
 app.listen(port, '127.0.0.1', () => console.log(`Nexo Nuu API disponible en http://localhost:${port}`));

@@ -11,6 +11,7 @@ const disponibilidadTexto = {
 
 export default function MiEspacio() {
   const { user } = useAuth();
+  const esAdministrador = user?.roles?.includes('administrador') ?? false;
   const esVoluntario = user?.roles?.includes('voluntario') ?? false;
 
   const [telefono, setTelefono] = useState(null);
@@ -109,6 +110,13 @@ export default function MiEspacio() {
           )}
         </article>
 
+        {esAdministrador && (
+          <article>
+            <h2>Administración de instituciones</h2>
+            <p>Revisa solicitudes pendientes y autoriza representantes desde el panel administrativo.</p>
+            <Link className="btn btn-primary" to="/admin/instituciones">Abrir administración</Link>
+          </article>
+        )}
         {esVoluntario && (
           <article>
             <h2>Mi perfil de voluntariado</h2>

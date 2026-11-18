@@ -1,0 +1,12 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { canApplyToJornada, validId } from '../src/lib/postulacionesRules.js';
+const future = new Date(Date.now()+86400_000).toISOString();
+const base = {estado:'publicada',estado_verificacion:'verificada',postulaciones_habilitadas:true,inicio:future,es_demo:false};
+test('IDs validos de jornada',()=>{assert.equal(validId('1'),true);assert.equal(validId('0'),false);assert.equal(validId('1 OR 1=1'),false);});
+test('Permite jornada verificada vigente habilitada',()=>assert.equal(canApplyToJornada(base),true));
+test('No permite institucion pendiente',()=>assert.equal(canApplyToJornada({...base,estado_verificacion:'pendiente'}),false));
+test('No permite jornada pasada',()=>assert.equal(canApplyToJornada({...base,inicio:'2020-01-01'}),false));
+test('No permite demostraciones en produccion',()=>assert.equal(canApplyToJornada({...base,es_demo:true}),false));
+test('Permite demo solo con modo local explicito',()=>assert.equal(canApplyToJornada({...base,es_demo:true},{localDemo:true}),true));
+test('No permite jornadas deshabilitadas',()=>assert.equal(canApplyToJornada({...base,postulaciones_habilitadas:false}),false));

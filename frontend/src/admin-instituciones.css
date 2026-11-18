@@ -1,0 +1,22 @@
+.admin-page { padding-bottom: 4rem; }
+.admin-overview {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem;margin:1.5rem 0}
+.admin-overview>div {background:var(--mint,#e9f6f2);border-radius:14px;padding:1rem;display:flex;flex-direction:column;gap:.4rem}
+.admin-overview strong{font-size:1.8rem;color:var(--teal,#075d60)}
+.admin-overview span{font-size:.85rem}
+.admin-alert{background:#fff8e7;border:1px solid #f3e4bb;border-radius:12px;padding:1rem;margin:1rem 0 1.5rem}
+.admin-institution{border:1px solid var(--border,#dfe9e7);border-radius:18px;padding:1.5rem;margin:1.2rem 0;background:#fff}
+.admin-institution-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.5rem}
+.admin-institution-head h2{font-size:1.35rem;margin:0}
+.admin-state{display:inline-block;background:#eef5f3;border-radius:100px;padding:.3rem .7rem;font-size:.75rem;font-weight:700}
+.admin-state-pendiente{color:#6f581b;background:#fff4d5}
+.admin-state-verificada,.admin-state-activo{color:#075d60;background:#e9f6f2}
+.admin-state-rechazada,.admin-state-revocado{color:#a93c33;background:#fff0ed}
+.admin-institution h3{font-size:1rem;margin-top:1.5rem}
+.admin-action{margin:1rem 0;padding:1rem;background:#f7fbfa;border-radius:12px;display:grid;gap:.6rem}
+.admin-action label{font-weight:650;font-size:.88rem}
+.admin-action textarea{font:inherit;width:100%;border-radius:10px;border:1px solid #bfd3d1;padding:.7rem;resize:vertical;background:white;color:#083a40}
+.admin-actions{display:flex;flex-wrap:wrap;gap:.6rem}
+.admin-actions button:disabled{opacity:.5;cursor:not-allowed}
+.admin-representative{border-top:1px solid #dfe9e7;padding-top:1rem;margin-top:1rem}
+.admin-message{padding:.9rem;border-radius:10px}.admin-error{background:#fff0ed;color:#8f302b}.admin-success{background:#e9f6f2;color:#075d60}
+@media(max-width:640px){.admin-overview{grid-template-columns:1fr}.admin-institution{padding:1rem}}

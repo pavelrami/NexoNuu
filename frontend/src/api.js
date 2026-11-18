@@ -1,12 +1,34 @@
-export async function getJornadas({ signal } = {}) {
-  const response = await fetch('/api/jornadas', { signal });
+// Consulta publica; conserva getJornadas() para codigo anterior.
+async function publicGet(path, signal) {
+  const response = await fetch(path, { signal });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
     const error = new Error(data.message || 'No se pudieron consultar las jornadas.');
     error.code = data.code;
     throw error;
   }
-  return data.jornadas ?? [];
+  return data;
+}
+
+export async function getJornadasConFiltros({ signal, filtros = {} } = {}) {
+  const params = new URLSearchParams();
+  for (const field of ['buscar', 'region', 'municipio', 'desde', 'hasta', 'lenguaId']) {
+    const value = filtros[field];
+    if (typeof value === 'string' && value.trim()) params.set(field, value.trim());
+  }
+  const suffix = params.toString();
+  const data = await publicGet(`/api/jornadas${suffix ? `?${suffix}` : ''}`, signal);
+  return {
+    jornadas: Array.isArray(data.jornadas) ? data.jornadas : [],
+    total: Number(data.total ?? data.jornadas?.length ?? 0)
+  };
+}
+
+export const getOpcionesJornadas = ({ signal } = {}) => publicGet('/api/jornadas/opciones', signal);
+
+export async function getJornadas({ signal } = {}) {
+  const resultado = await getJornadasConFiltros({ signal });
+  return resultado.jornadas;
 }
 
 async function authRequest(path, { method = 'GET', payload } = {}) {
@@ -57,3 +79,56 @@ async function volunteerRequest(path, { method = 'GET', payload } = {}) {
 export const getVolunteerCatalogs = () => volunteerRequest('catalogos');
 export const getVolunteerProfile = () => volunteerRequest('me');
 export const saveVolunteerProfile = (perfil) => volunteerRequest('me', { method: 'PUT', payload: perfil });
+
+// Incremento 4.2: ficha publica de una jornada vigente.
+export const getDetalleJornada = (id, { signal } = {}) => publicGet(`/api/jornadas/${encodeURIComponent(id)}`, signal);
+
+// Incremento 4.3: postulaciones propias (requieren sesion).
+async function postulacionesRequest(path, { method='GET', payload }={}) {
+  const response = await fetch(`/api/postulaciones${path}`, {
+    method, credentials:'same-origin',
+    headers: payload ? { 'Content-Type':'application/json' } : {},
+    body: payload ? JSON.stringify(payload) : undefined
+  });
+  const data=await response.json().catch(()=>({}));
+  if (!response.ok) {
+    const error=new Error(data.message||'No fue posible completar la solicitud.');
+    error.code=data.code; throw error;
+  }
+  return data;
+}
+export const getMisPostulaciones=()=>postulacionesRequest('/mias');
+export const postularJornada=(jornadaId)=>postulacionesRequest('/',{method:'POST',payload:{jornadaId}});
+export const retirarPostulacion=(id)=>postulacionesRequest(`/${encodeURIComponent(id)}/retirar`,{method:'PATCH'});
+
+// Incremento 5.1: solicitudes institucionales (cuenta verificada, sin permisos automaticos).
+async function institutionRequest(path, { method='GET', payload }={}) {
+  const response=await fetch(`/api/instituciones/${path}`, {
+    method, credentials:'same-origin',
+    headers: payload ? { 'Content-Type':'application/json' } : {},
+    body: payload ? JSON.stringify(payload) : undefined
+  });
+  const data=await response.json().catch(()=>({}));
+  if (!response.ok) {
+    const error=new Error(data.message || 'No se pudo procesar la solicitud institucional.');
+    error.code=data.code; throw error;
+  }
+  return data;
+}
+export const getInstitutionRequests=()=>institutionRequest('mis-solicitudes');
+export const submitInstitutionRequest=(data)=>institutionRequest('solicitudes', { method:'POST', payload:data });
+
+// Incremento 5.2: exclusivamente administradores (validacion real en Express).
+async function adminRequest(path,{method='GET',payload}={}) {
+  const response=await fetch(`/api/admin/${path}`,{
+    method,credentials:'same-origin',
+    headers:payload?{'Content-Type':'application/json'}:{},
+    body:payload?JSON.stringify(payload):undefined
+  });
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok){const e=new Error(data.message||'Acceso denegado.');e.code=data.code;throw e;}
+  return data;
+}
+export const getAdminInstitutions=()=>adminRequest('instituciones');
+export const decideInstitution=(id,accion,motivo)=>adminRequest(`instituciones/${encodeURIComponent(id)}/decision`,{method:'PATCH',payload:{accion,motivo}});
+export const decideRepresentative=(id,usuarioId,accion,motivo)=>adminRequest(`instituciones/${encodeURIComponent(id)}/representantes/${encodeURIComponent(usuarioId)}`,{method:'PATCH',payload:{accion,motivo}});
