@@ -110,6 +110,13 @@ export default function MiEspacio() {
           )}
         </article>
 
+        {user.roles?.includes('representante') && (
+          <article>
+            <h2>Mi panel institucional</h2>
+            <p>Consulta las instituciones que representas y crea jornadas DEMO en borrador.</p>
+            <Link className="btn btn-primary" to="/panel-institucional">Abrir panel institucional</Link>
+          </article>
+        )}
         {esAdministrador && (
           <article>
             <h2>Administración de instituciones</h2>

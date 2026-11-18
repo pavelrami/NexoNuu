@@ -14,7 +14,8 @@
     "test": "node --test",
     "db:migrate:postulaciones": "node src/scripts/migratePostulaciones.js",
     "db:migrate:admin": "node src/scripts/migrateAdmin.js",
-    "admin:bootstrap": "node src/scripts/bootstrapAdmin.js"
+    "admin:bootstrap": "node src/scripts/bootstrapAdmin.js",
+    "db:migrate:jornadas": "node src/scripts/migrateJornadaLifecycle.js"
   },
   "dependencies": {
     "express": "^5.1.0",

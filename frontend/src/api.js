@@ -132,3 +132,34 @@ async function adminRequest(path,{method='GET',payload}={}) {
 export const getAdminInstitutions=()=>adminRequest('instituciones');
 export const decideInstitution=(id,accion,motivo)=>adminRequest(`instituciones/${encodeURIComponent(id)}/decision`,{method:'PATCH',payload:{accion,motivo}});
 export const decideRepresentative=(id,usuarioId,accion,motivo)=>adminRequest(`instituciones/${encodeURIComponent(id)}/representantes/${encodeURIComponent(usuarioId)}`,{method:'PATCH',payload:{accion,motivo}});
+
+// Incremento 5.3: representante autorizado. Todas las operaciones se protegen en Express.
+async function representativeRequest(path,{method='GET',payload}={}){
+ const response=await fetch(`/api/panel-institucional/${path}`,{method,credentials:'same-origin',headers:payload?{'Content-Type':'application/json'}:{},body:payload?JSON.stringify(payload):undefined});
+ const data=await response.json().catch(()=>({}));
+ if(!response.ok){const e=new Error(data.message||'Error de gestion institucional.');e.code=data.code;throw e;}
+ return data;
+}
+export const getRepresentativeInstitutions=()=>representativeRequest('instituciones');
+export const getRepresentativeCommunities=()=>representativeRequest('comunidades');
+export const getRepresentativeJornadas=id=>representativeRequest(`instituciones/${encodeURIComponent(id)}/jornadas`);
+export const createRepresentativeJornada=(id,payload)=>representativeRequest(`instituciones/${encodeURIComponent(id)}/jornadas`,{method:'POST',payload});
+export const publishRepresentativeDemo=(id,jornadaId)=>representativeRequest(`instituciones/${encodeURIComponent(id)}/jornadas/${encodeURIComponent(jornadaId)}/publicar-demo`,{method:'PATCH'});
+
+// Incremento 5.4: consultas y decisiones exclusivas de representantes.
+export const getRepresentativeApplications=(id,jornadaId)=>representativeRequest(`instituciones/${encodeURIComponent(id)}/jornadas/${encodeURIComponent(jornadaId)}/postulaciones`);
+export const decideRepresentativeApplication=(id,jornadaId,postulacionId,estado)=>representativeRequest(`instituciones/${encodeURIComponent(id)}/jornadas/${encodeURIComponent(jornadaId)}/postulaciones/${encodeURIComponent(postulacionId)}/decision`,{method:'PATCH',payload:{estado}});
+
+// Incremento 5.5: ciclo de vida DEMO con validacion de permisos y auditoria.
+export const editRepresentativeDraft = (institutionId, jornadaId, payload) =>
+  representativeRequest(`instituciones/${encodeURIComponent(institutionId)}/jornadas/${encodeURIComponent(jornadaId)}/editar-demo`, { method: 'PATCH', payload });
+export const transitionRepresentativeDemo = (institutionId, jornadaId, accion, motivo) =>
+  representativeRequest(`instituciones/${encodeURIComponent(institutionId)}/jornadas/${encodeURIComponent(jornadaId)}/transicion-demo`, { method: 'PATCH', payload: { accion, motivo } });
+export const getRepresentativeJornadaHistory = (institutionId, jornadaId) =>
+  representativeRequest(`instituciones/${encodeURIComponent(institutionId)}/jornadas/${encodeURIComponent(jornadaId)}/historial`);
+
+// Incremento 6.1: registro de avances de coordinación de jornadas DEMO.
+export const getRepresentativeSeguimientos = (institutionId, jornadaId) =>
+  representativeRequest(`instituciones/${encodeURIComponent(institutionId)}/jornadas/${encodeURIComponent(jornadaId)}/seguimientos`);
+export const createRepresentativeSeguimiento = (institutionId, jornadaId, payload) =>
+  representativeRequest(`instituciones/${encodeURIComponent(institutionId)}/jornadas/${encodeURIComponent(jornadaId)}/seguimientos`, { method: 'POST', payload });

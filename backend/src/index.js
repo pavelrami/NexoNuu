@@ -8,6 +8,7 @@ import jornadasRoutes from './routes/jornadas.js';
 import postulacionesRoutes from './routes/postulaciones.js';
 import institucionesRoutes from './routes/instituciones.js';
 import adminRoutes from './routes/admin.js';
+import panelInstitucionalRoutes from './routes/panelInstitucional.js';
 
 const app = express();
 const port = Number(process.env.PORT || 3001);
@@ -33,6 +34,7 @@ app.use('/api/jornadas', jornadasRoutes);
 app.use('/api/postulaciones', postulacionesRoutes);
 app.use('/api/instituciones', institucionesRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/panel-institucional', panelInstitucionalRoutes);
 
 app.use((req, res) => res.status(404).json({ code: 'NO_ENCONTRADO', message: 'Ruta no encontrada' }));
 app.listen(port, '127.0.0.1', () => console.log(`Nexo Nuu API disponible en http://localhost:${port}`));

@@ -9,6 +9,7 @@ import Voluntariado from './pages/Voluntariado.jsx';
 import Instituciones from './pages/Instituciones.jsx';
 import SolicitarInstitucion from './pages/SolicitarInstitucion.jsx';
 import AdminInstituciones from './pages/AdminInstituciones.jsx';
+import PanelInstitucional from './pages/PanelInstitucional.jsx';
 import Seguimiento from './pages/Seguimiento.jsx';
 import Login from './pages/Login.jsx';
 import Registro from './pages/Registro.jsx';
@@ -42,6 +43,7 @@ export default function App() {
     <Route path="/voluntariado" element={<Voluntariado/>}/>
     <Route path="/instituciones" element={<Instituciones/>}/>
     <Route path="/instituciones/solicitar" element={<Private><SolicitarInstitucion/></Private>}/>
+    <Route path="/panel-institucional" element={<Private><PanelInstitucional/></Private>}/>
     <Route path="/admin/instituciones" element={<AdminOnly><AdminInstituciones/></AdminOnly>}/>
     <Route path="/seguimiento" element={<Seguimiento/>}/>
     <Route path="/iniciar-sesion" element={<Login/>}/>
