@@ -35,12 +35,14 @@ export function tokenHash(raw) { return createHash('sha256').update(raw).digest(
 
 export const COOKIE_NAME = 'nexo_sesion';
 export const SESSION_MS = 7 * 24 * 60 * 60 * 1000;
+// COOKIE_SECURE=false solo mientras el sitio aun no tiene HTTPS (por ejemplo, entrando por la IP).
+const secure = () => (process.env.COOKIE_SECURE ? process.env.COOKIE_SECURE === 'true' : process.env.NODE_ENV === 'production');
 export function sessionCookie(token) {
-  const isProduction = process.env.NODE_ENV === 'production';
+  const isProduction = secure();
   return `${COOKIE_NAME}=${token}; Path=/api; HttpOnly; SameSite=Lax; Max-Age=${SESSION_MS / 1000}${isProduction ? '; Secure' : ''}`;
 }
 export function clearSessionCookie() {
-  return `${COOKIE_NAME}=; Path=/api; HttpOnly; SameSite=Lax; Max-Age=0${process.env.NODE_ENV === 'production' ? '; Secure' : ''}`;
+  return `${COOKIE_NAME}=; Path=/api; HttpOnly; SameSite=Lax; Max-Age=0${secure() ? '; Secure' : ''}`;
 }
 export function readCookie(header = '', name = COOKIE_NAME) {
   const part = header.split(';').map((x) => x.trim()).find((x) => x.startsWith(`${name}=`));

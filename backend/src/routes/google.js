@@ -14,7 +14,7 @@ const appUrl = () => (process.env.APP_URL || 'http://localhost:5173').replace(/\
 const redirectUri = () => `${appUrl()}/api/auth/google/callback`;
 export const googleConfigurado = () => Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
 
-const cookieTemporal = (valor, maxAge) => `${COOKIE}=${valor}; Path=/api/auth/google; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${process.env.NODE_ENV === 'production' ? '; Secure' : ''}`;
+const cookieTemporal = (valor, maxAge) => `${COOKIE}=${valor}; Path=/api/auth/google; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${(process.env.COOKIE_SECURE ? process.env.COOKIE_SECURE === 'true' : process.env.NODE_ENV === 'production') ? '; Secure' : ''}`;
 const volverConError = (res, codigo) => res.redirect(302, `${appUrl()}/iniciar-sesion?error=${encodeURIComponent(codigo)}`);
 
 router.get('/', limitRequests({ prefix: 'google-inicio', max: 30, windowMs: 15 * 60_000 }), (req, res) => {
