@@ -1,11 +1,12 @@
-import { allowedDemoPublish, validateNewJornada } from './panelInstitucionalValidation.js';
-
-export function demoLifecycleAllowed(j, opts = {}) {
-  return Boolean(j && j.es_demo === true && allowedDemoPublish(opts));
-}
+import { puedeGestionarJornada, validateNewJornada } from './panelInstitucionalValidation.js';
 
 export function draftCanEdit(j, opts = {}) {
-  return demoLifecycleAllowed(j, opts) && j.estado === 'borrador' && new Date(j.inicio).getTime() > Date.now();
+  return puedeGestionarJornada(j, opts) && j.estado === 'borrador' && new Date(j.inicio).getTime() > Date.now();
+}
+
+/** Publicar: borrador futuro de una jornada gestionable. */
+export function canPublish(j, opts = {}) {
+  return puedeGestionarJornada(j, opts) && j.estado === 'borrador' && new Date(j.inicio).getTime() > Date.now();
 }
 
 export function validateDraftEdit(body) {
@@ -22,7 +23,7 @@ export function validateLifecycleAction(body) {
 }
 
 export function evaluateLifecycle({ jornada, accion, pendientes, aceptadas, now = Date.now(), opciones = {} }) {
-  if (!demoLifecycleAllowed(jornada, opciones)) return { ok: false, message: 'Gestion disponible solo para jornadas DEMO locales.' };
+  if (!puedeGestionarJornada(jornada, opciones)) return { ok: false, message: 'Las jornadas de demostracion solo se gestionan con el modo demo activo.' };
   const pending = Number(pendientes), accepted = Number(aceptadas);
   if (!Number.isSafeInteger(pending) || !Number.isSafeInteger(accepted) || pending < 0 || accepted < 0) return { ok: false, message: 'Conteos invalidos.' };
   let estado;

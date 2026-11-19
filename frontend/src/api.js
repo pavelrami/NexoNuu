@@ -144,7 +144,7 @@ export const getRepresentativeInstitutions=()=>representativeRequest('institucio
 export const getRepresentativeCommunities=()=>representativeRequest('comunidades');
 export const getRepresentativeJornadas=id=>representativeRequest(`instituciones/${encodeURIComponent(id)}/jornadas`);
 export const createRepresentativeJornada=(id,payload)=>representativeRequest(`instituciones/${encodeURIComponent(id)}/jornadas`,{method:'POST',payload});
-export const publishRepresentativeDemo=(id,jornadaId)=>representativeRequest(`instituciones/${encodeURIComponent(id)}/jornadas/${encodeURIComponent(jornadaId)}/publicar-demo`,{method:'PATCH'});
+export const publishRepresentativeDemo=(id,jornadaId)=>representativeRequest(`instituciones/${encodeURIComponent(id)}/jornadas/${encodeURIComponent(jornadaId)}/publicar`,{method:'PATCH'});
 
 // Incremento 5.4: consultas y decisiones exclusivas de representantes.
 export const getRepresentativeApplications=(id,jornadaId)=>representativeRequest(`instituciones/${encodeURIComponent(id)}/jornadas/${encodeURIComponent(jornadaId)}/postulaciones`);
@@ -152,9 +152,9 @@ export const decideRepresentativeApplication=(id,jornadaId,postulacionId,estado)
 
 // Incremento 5.5: ciclo de vida DEMO con validacion de permisos y auditoria.
 export const editRepresentativeDraft = (institutionId, jornadaId, payload) =>
-  representativeRequest(`instituciones/${encodeURIComponent(institutionId)}/jornadas/${encodeURIComponent(jornadaId)}/editar-demo`, { method: 'PATCH', payload });
+  representativeRequest(`instituciones/${encodeURIComponent(institutionId)}/jornadas/${encodeURIComponent(jornadaId)}/editar`, { method: 'PATCH', payload });
 export const transitionRepresentativeDemo = (institutionId, jornadaId, accion, motivo) =>
-  representativeRequest(`instituciones/${encodeURIComponent(institutionId)}/jornadas/${encodeURIComponent(jornadaId)}/transicion-demo`, { method: 'PATCH', payload: { accion, motivo } });
+  representativeRequest(`instituciones/${encodeURIComponent(institutionId)}/jornadas/${encodeURIComponent(jornadaId)}/transicion`, { method: 'PATCH', payload: { accion, motivo } });
 export const getRepresentativeJornadaHistory = (institutionId, jornadaId) =>
   representativeRequest(`instituciones/${encodeURIComponent(institutionId)}/jornadas/${encodeURIComponent(jornadaId)}/historial`);
 
@@ -167,3 +167,15 @@ export const createRepresentativeSeguimiento = (institutionId, jornadaId, payloa
 // Incremento 7: indicadores publicos agregados y referencia historica.
 export const getEstadisticas = ({ signal } = {}) => publicGet('/api/estadisticas', signal);
 export const getJornadasHistoricas = ({ signal } = {}) => publicGet('/api/jornadas/historicas', signal);
+
+// Incremento 8: opciones de acceso (Google y modo de correo).
+export const getProveedores = () => authRequest('proveedores');
+
+// Incremento 8: administracion general.
+export const getAdminResumen = () => adminRequest('resumen');
+export const getAdminUsuarios = (buscar = '') => adminRequest(`usuarios${buscar ? `?buscar=${encodeURIComponent(buscar)}` : ''}`);
+export const setAdminUsuarioEstado = (id, estado, motivo) => adminRequest(`usuarios/${encodeURIComponent(id)}/estado`, { method: 'PATCH', payload: { estado, motivo } });
+export const setAdminUsuarioAdmin = (id, accion, motivo) => adminRequest(`usuarios/${encodeURIComponent(id)}/admin`, { method: 'PATCH', payload: { accion, motivo } });
+export const revokeInstitution = (id, motivo) => adminRequest(`instituciones/${encodeURIComponent(id)}/revocar`, { method: 'PATCH', payload: { motivo } });
+export const getAdminJornadas = () => adminRequest('jornadas');
+export const cancelAdminJornada = (id, motivo) => adminRequest(`jornadas/${encodeURIComponent(id)}/cancelar`, { method: 'PATCH', payload: { motivo } });

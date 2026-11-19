@@ -1,7 +1,12 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { requestPasswordReset } from '../api.js';
+import AuthLayout from '../components/AuthLayout.jsx';
+import { useProveedores } from '../components/GoogleButton.jsx';
+import { Icon } from '../components/Icons.jsx';
+
 export default function OlvideContrasena() {
+  const proveedores = useProveedores();
   const [correo, setCorreo] = useState('');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
@@ -12,18 +17,24 @@ export default function OlvideContrasena() {
     catch (e) { setError(e.message); }
     finally { setBusy(false); }
   }
-  return <section className="container auth-page"><div className="auth-intro">
-    <span className="section-kicker">Seguridad de la cuenta</span>
-    <h1>Recupera el acceso a Nexo Ñuu</h1>
-    <p>Te ayudaremos a establecer una nueva contraseña sin mostrar públicamente si tu correo está registrado.</p>
-  </div><div className="auth-card"><h2>Olvidé mi contraseña</h2>
-    <p className="auth-muted">Indica tu correo. Si corresponde a una cuenta verificada, recibirás un enlace válido durante 30 minutos.</p>
-    <form onSubmit={submit} className="auth-form"><label htmlFor="recuperar-correo">Correo electrónico</label>
-      <input id="recuperar-correo" type="email" autoComplete="email" required value={correo} onChange={e => setCorreo(e.target.value)}/>
+  return <AuthLayout kicker="Seguridad de la cuenta" titulo="Recupera tu acceso"
+    subtitulo="Escribe el correo de tu cuenta. Te enviaremos un enlace para crear una nueva contraseña, válido durante 30 minutos."
+    panelTitulo="Tu cuenta sigue a salvo" panelTexto="Por seguridad no mostramos si un correo está registrado. Si existe una cuenta verificada, el enlace llegará a esa bandeja.">
+    {message ? <div className="registro-enviado" role="status">
+      <span className="registro-icono"><Icon name="mail" size={28} /></span>
+      <h2>Revisa tu correo</h2>
+      <p>{message}</p>
+      {proveedores?.correo === 'terminal' && <p className="auth-muted">Estás en modo local: el enlace aparece en la terminal del backend.</p>}
+      <button type="button" className="btn btn-outline" onClick={() => setMessage('')}>Usar otro correo</button>
+    </div> : <form onSubmit={submit} className="auth-form">
+      <label htmlFor="recuperar-correo">Correo electrónico</label>
+      <div className="input-icono"><Icon name="mail" size={18} />
+        <input id="recuperar-correo" type="email" autoComplete="email" required value={correo} onChange={(e) => setCorreo(e.target.value)} placeholder="tu@correo.com" />
+      </div>
       {error && <div className="auth-error" role="alert">{error}</div>}
-      {message && <div className="auth-success" role="status">{message}</div>}
-      <button className="btn btn-primary" type="submit" disabled={busy}>{busy ? 'Enviando…' : 'Solicitar enlace'}</button>
-    </form><p className="auth-switch"><Link to="/iniciar-sesion">Volver al inicio de sesión</Link></p>
-    <small className="auth-muted">En desarrollo local, el enlace se mostrará en la terminal del backend.</small>
-  </div></section>;
+      <button className="btn btn-primary btn-lg" type="submit" disabled={busy}>{busy ? 'Enviando…' : <>Enviarme el enlace <Icon name="arrow" size={18} /></>}</button>
+    </form>}
+    <p className="auth-switch"><Link to="/iniciar-sesion">Volver a iniciar sesión</Link></p>
+    <small className="auth-legal">Si entraste con Google y nunca creaste contraseña, este enlace te permite crear una.</small>
+  </AuthLayout>;
 }

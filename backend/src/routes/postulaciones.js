@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { pool } from '../db.js';
 import { readCookie, tokenHash } from '../lib/security.js';
 import { limitRequests, sameOriginWrite } from '../lib/limits.js';
-import { allowLocalDemo, canApplyToJornada, validId } from '../lib/postulacionesRules.js';
+import { allowDemo, canApplyToJornada, telefonoObligatorio, validId } from '../lib/postulacionesRules.js';
 
 const router = Router();
 router.use((_req, res, next) => {
@@ -54,7 +54,7 @@ router.get('/mias', async (req,res) => {
 router.post('/', limitRequests({prefix:'postular',max:12,windowMs:15*60_000}), async (req,res) => {
   const id = req.body?.jornadaId;
   if (!validId(String(id || ''))) return res.status(400).json({code:'JORNADA_INVALIDA',message:'Selecciona una jornada valida.'});
-  if (!req.voluntario.telefono_verificado) return res.status(403).json({code:'TELEFONO_PENDIENTE',message:'Verifica tu telefono antes de postularte.'});
+  if (telefonoObligatorio() && !req.voluntario.telefono_verificado) return res.status(403).json({code:'TELEFONO_PENDIENTE',message:'Verifica tu teléfono antes de postularte.'});
   const client = await pool.connect().catch(() => null);
   if (!client) return res.status(503).json({code:'BASE_NO_DISPONIBLE',message:'Base de datos no disponible.'});
   try {
@@ -64,7 +64,7 @@ router.post('/', limitRequests({prefix:'postular',max:12,windowMs:15*60_000}), a
                     i.estado_verificacion FROM jornadas j JOIN instituciones i ON i.id=j.institucion_id
                     WHERE j.id=$1 FOR UPDATE OF j`, [id]);
     if (!profile.rowCount) { await client.query('ROLLBACK'); return res.status(403).json({code:'PERFIL_PENDIENTE',message:'Completa tu perfil antes de postularte.'}); }
-    if (!canApplyToJornada(jornada.rows[0],{localDemo:allowLocalDemo()})) {
+    if (!canApplyToJornada(jornada.rows[0],{demo:allowDemo()})) {
       await client.query('ROLLBACK');
       return res.status(403).json({code:'JORNADA_NO_ADMITE_SOLICITUDES',message:'Esta jornada no admite postulaciones.'});
     }

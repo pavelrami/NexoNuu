@@ -1,8 +1,7 @@
-import { allowedDemoPublish } from './panelInstitucionalValidation.js';
+import { puedeGestionarJornada } from './panelInstitucionalValidation.js';
 
-export function seguimientoDemoHabilitado(j, opciones = {}) {
-  return Boolean(j && j.es_demo === true &&
-    ['publicada', 'cerrada', 'finalizada'].includes(j.estado) && allowedDemoPublish(opciones));
+export function seguimientoHabilitado(j, opciones = {}) {
+  return Boolean(j && puedeGestionarJornada(j, opciones) && ['publicada', 'cerrada', 'finalizada'].includes(j.estado));
 }
 export function validateSeguimiento(body) {
   if (!body || typeof body !== 'object' || Array.isArray(body)) return { ok: false, message: 'Formulario de seguimiento invalido.' };

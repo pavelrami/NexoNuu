@@ -39,7 +39,7 @@ export default function Footer() {
         <a href="https://www.oaxaca.gob.mx/ieea/" target="_blank" rel="noopener noreferrer">IEEA Oaxaca <Icon name="arrowUpRight" size={14} /></a>
         <a href="https://www.inegi.org.mx/programas/eic/2025/" target="_blank" rel="noopener noreferrer">INEGI · Encuesta Intercensal 2025 <Icon name="arrowUpRight" size={14} /></a>
         <strong className="footer-sub">Contacto</strong>
-        <span className="marcador">[CORREO DE CONTACTO]</span>
+        <a href="mailto:22161118@itoaxaca.edu.mx"><Icon name="mail" size={14} /> 22161118@itoaxaca.edu.mx</a>
       </div>
     </div>
     <div className="container footer-bottom">

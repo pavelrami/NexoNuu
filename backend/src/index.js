@@ -10,10 +10,13 @@ import institucionesRoutes from './routes/instituciones.js';
 import adminRoutes from './routes/admin.js';
 import panelInstitucionalRoutes from './routes/panelInstitucional.js';
 import estadisticasRoutes from './routes/estadisticas.js';
+import googleRoutes from './routes/google.js';
 
 const app = express();
 const port = Number(process.env.PORT || 3001);
 app.disable('x-powered-by');
+// Detrás de nginx en el VPS: la IP real llega en X-Forwarded-For desde el propio servidor.
+app.set('trust proxy', 'loopback');
 app.use(express.json({ limit: '100kb' }));
 
 app.get('/api/health', async (_req, res) => {
@@ -26,6 +29,8 @@ app.get('/api/health', async (_req, res) => {
   }
 });
 
+// Incremento 8: acceso con Google (antes del router general de autenticación).
+app.use('/api/auth/google', googleRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/auth/telefono', phoneRoutes);
 app.use('/api/voluntarios', volunteerRoutes);

@@ -4,6 +4,84 @@ Rediseño completo del sitio público (Inicio, Jornadas, Detalle, Voluntariado, 
 
 ---
 
+## Incremento 8: plataforma funcional (cuentas, correo real, Google, administración e instituciones)
+
+### Pasos una sola vez (en `backend`)
+
+```powershell
+npm.cmd install                                   # instala nodemailer 10.3.1
+npm.cmd run db:migrate:plataforma                 # migración 009 (aditiva, se puede repetir)
+npm.cmd run db:seed:demo -- --confirmar           # cuentas y jornadas de demostración
+```
+
+El último comando crea:
+
+| Qué | Detalle |
+|---|---|
+| Cuenta **administradora** | Revisa solicitudes, verifica o retira instituciones, autoriza representantes, bloquea o reactiva usuarios, da o quita permisos de administración y cancela jornadas por moderación |
+| Cuenta **institucional** | Representante autorizada de la “Institución Demostrativa Nexo Ñuu”: crea, publica, edita, cierra y finaliza jornadas, y acepta o rechaza a quien se postula |
+| Cuenta **voluntaria** | Con perfil completo (comunidad, habilidades y lenguas) y dos postulaciones pendientes |
+| 9 comunidades reales | Una o más por cada una de las 8 regiones de Oaxaca |
+| 9 jornadas de demostración | 8 publicadas (con la etiqueta “Demostración”) y 1 en borrador para probar “Publicar” |
+
+En el VPS (con `NODE_ENV=production`) el comando lleva además `--confirmar-produccion`. Las contraseñas se generan al azar y se guardan en **`backend/credenciales-demo.local.txt`** (Git lo ignora). Para generar contraseñas nuevas: `npm.cmd run db:seed:demo -- --confirmar --reiniciar-claves`. Los correos de las cuentas son `@nexonuu.test` salvo que pongas otros en `SEED_*_CORREO` dentro de `.env`.
+
+### Qué hace cada parte
+
+- **Correo real a la bandeja del usuario.** `EMAIL_MODE=smtp` (Hostinger, Gmail u Outlook) o `EMAIL_MODE=resend`. Se envían con el diseño de la marca:
+  - el enlace de verificación al crear la cuenta (vence en 24 h);
+  - el enlace para restablecer la contraseña (vence en 30 min y sirve una sola vez);
+  - el aviso a la persona voluntaria cuando una institución acepta o rechaza su postulación.
+
+  Con `EMAIL_MODE=console` (local), los enlaces aparecen en la terminal del backend.
+- **Solo correos que existen.** Al registrarse, el servidor revisa que el dominio del correo exista y reciba mensajes (registros MX). Después, nadie entra sin abrir el enlace que llega a ese buzón.
+- **Google.** Los botones “Continuar con Google” y “Registrarme con Google” usan OpenID Connect con PKCE y validan emisor, audiencia, vigencia y correo verificado. Si el correo ya existía sin verificar, se invalida la contraseña anterior para que nadie conserve el acceso. Mientras no configures `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET`, el botón explica que falta configurarlo.
+- **Olvidé mi contraseña.** Funciona de punta a punta y se rediseñó; también sirve a quien entró con Google y quiere crear una contraseña.
+- **Panel institucional (ya no solo local).** Las jornadas reales de instituciones verificadas se gestionan siempre. Las de demostración se gestionan con `ALLOW_DEMO_POSTULACIONES=1`. La institución ve el perfil que cada persona compartió (comunidad, disponibilidad, habilidades y lenguas); **el correo de contacto aparece solo cuando acepta la postulación**.
+- **Administración** en `/admin`, con pestañas Solicitudes, Instituciones, Usuarios y Jornadas. Cada decisión pide un motivo y queda auditada en `decisiones_institucionales`, `decisiones_usuarios` o `jornadas_historial`. Nadie puede bloquearse ni quitarse permisos a sí mismo.
+- **Teléfono.** Postularse ya no exige teléfono verificado, salvo que pongas `TELEFONO_OBLIGATORIO=1` (hace falta un proveedor de SMS en producción).
+
+### Configurar el correo real
+
+**Opción A, correo de tu dominio en Hostinger:** crea un buzón (por ejemplo `no-responder@tudominio.com`) en hPanel, Correos electrónicos. Después, en `backend/.env`:
+
+```env
+EMAIL_MODE=smtp
+SMTP_HOST=smtp.hostinger.com
+SMTP_PORT=465
+SMTP_USER=no-responder@tudominio.com
+SMTP_PASS=(contraseña del buzón)
+EMAIL_FROM=Nexo Ñuu <no-responder@tudominio.com>
+```
+
+**Opción B, Gmail:** activa la verificación en dos pasos y crea una *contraseña de aplicación* en tu cuenta de Google. Después usa `SMTP_HOST=smtp.gmail.com`, `SMTP_PORT=465`, tu Gmail en `SMTP_USER` y `EMAIL_FROM`, y la contraseña de aplicación en `SMTP_PASS`.
+
+Reinicia el backend después de editar `.env`. Para revisar que funcione, crea una cuenta con tu correo real y espera el mensaje (revisa también la carpeta de spam).
+
+### Configurar Google
+
+1. En [Google Cloud Console](https://console.cloud.google.com/) crea un proyecto. En “Pantalla de consentimiento de OAuth” elige **Externo** y llena el nombre de la app y tu correo.
+2. En Credenciales, crea un **ID de cliente de OAuth** de tipo *Aplicación web*.
+3. En “URI de redireccionamiento autorizados” agrega:
+   - local: `http://localhost:5173/api/auth/google/callback`
+   - VPS: `https://tudominio.com/api/auth/google/callback`
+4. Copia el ID y el secreto en `backend/.env` (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`) y reinicia el backend.
+
+### Nuevas rutas de la API
+
+| Método | Ruta | Quién |
+|---|---|---|
+| GET | `/api/auth/proveedores` | Público: si Google está activo y cómo se entrega el correo |
+| GET | `/api/auth/google`, `/api/auth/google/callback` | Público (flujo de Google) |
+| GET | `/api/admin/resumen`, `/api/admin/usuarios`, `/api/admin/jornadas` | Administración |
+| PATCH | `/api/admin/usuarios/:id/estado`, `/api/admin/usuarios/:id/admin` | Administración |
+| PATCH | `/api/admin/instituciones/:id/revocar`, `/api/admin/jornadas/:id/cancelar` | Administración |
+| PATCH | `/api/panel-institucional/…/publicar`, `/editar`, `/transicion` | Representante (las rutas `-demo` anteriores siguen funcionando) |
+
+Pruebas: **64** en el backend (`npm.cmd test`), con casos nuevos de Google, de dominios de correo y de permisos.
+
+---
+
 ## 1. Cómo verlo en tu computadora
 
 Igual que antes, dos terminales:
@@ -167,11 +245,12 @@ Todas las cifras se muestran con su fuente visible y enlace. Se aclara en el sit
 
 ## 7. Pendientes
 
-- [ ] **[CORREO DE CONTACTO]** en el pie (marcador amarillo). Falta el correo real.
+- [x] Correo de contacto en el pie: 22161118@itoaxaca.edu.mx.
+- [ ] Configurar `EMAIL_MODE=smtp` (o Resend) con un buzón real para que los correos lleguen a la bandeja.
+- [ ] Crear las credenciales de Google y ponerlas en `backend/.env`.
 - [ ] Confirmar las cifras del IEEA (punto 3 de “Por validar”).
 - [ ] Fotos reales con permiso de las comunidades, si quieres sustituir ilustraciones.
-- [ ] Revisar con una sesión iniciada: Mi espacio, Perfil de voluntariado, Mis postulaciones, Panel institucional y Administración heredan el nuevo estilo, pero **no los revisé con una cuenta** (no usé contraseñas tuyas ni creé cuentas en tu base).
-- [ ] Probar en un celular real (lo revisé con Chrome sin ventana a 375 × 812 y 1440 × 900).
+- [ ] Probar en un celular real (lo revisé con Chrome sin ventana a 375 × 812 y 1440 × 900, con y sin sesión).
 - [ ] Enlace de contacto o redes sociales oficiales, si los hay.
 
 ---

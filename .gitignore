@@ -16,3 +16,6 @@ coverage/
 # Archivos locales
 .vscode/
 .DS_Store
+
+# Credenciales locales de las cuentas de demostracion
+*.local.txt

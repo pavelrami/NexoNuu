@@ -15,11 +15,14 @@
     "db:migrate:postulaciones": "node src/scripts/migratePostulaciones.js",
     "db:migrate:admin": "node src/scripts/migrateAdmin.js",
     "admin:bootstrap": "node src/scripts/bootstrapAdmin.js",
-    "db:migrate:jornadas": "node src/scripts/migrateJornadaLifecycle.js"
+    "db:migrate:jornadas": "node src/scripts/migrateJornadaLifecycle.js",
+    "db:migrate:plataforma": "node src/scripts/migratePlataforma.js",
+    "db:seed:demo": "node src/scripts/seedDemo.js"
   },
   "dependencies": {
-    "express": "^5.1.0",
     "dotenv": "^17.2.0",
+    "express": "^5.1.0",
+    "nodemailer": "10.3.1",
     "pg": "^8.16.0"
   }
 }

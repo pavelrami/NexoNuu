@@ -21,8 +21,8 @@ export default function JornadaGestion({ jornada, institucionId, comunidades, on
   const [busy, setBusy] = useState(false);
   const [history, setHistory] = useState(null);
   const [showHistory, setShowHistory] = useState(false);
-  const localDemo = import.meta.env.DEV && jornada.es_demo;
-  if (!localDemo) return null;
+  const [abierto, setAbierto] = useState(false);
+  if (!jornada.gestionable) return null;
   const pending = Number(jornada.pendientes || 0), accepted = Number(jornada.aceptadas || 0);
   const options = [];
   if (jornada.estado === 'borrador') options.push('cancelar');
@@ -59,8 +59,16 @@ export default function JornadaGestion({ jornada, institucionId, comunidades, on
     catch (error) { onError(error.message); }
     finally { setBusy(false); }
   }
+  if (!abierto) {
+    return <button type="button" className="btn btn-outline btn-sm panel-inst-toggle" aria-expanded="false" onClick={() => setAbierto(true)}>
+      Gestionar jornada (editar, cerrar, historial)
+    </button>;
+  }
   return <div className="panel-inst-manage">
-    <h3>Administración de jornada DEMO</h3>
+    <div className="panel-inst-manage-head">
+      <h3>Gestionar jornada</h3>
+      <button type="button" className="btn btn-outline btn-sm" aria-expanded="true" onClick={() => setAbierto(false)}>Ocultar</button>
+    </div>
     {jornada.estado === 'borrador' && <>
       <button type="button" className="btn btn-outline" disabled={busy} onClick={() => { setDraft(formFrom(jornada)); setEditing(!editing); }}>{editing ? 'Ocultar edición' : 'Editar borrador'}</button>
       {editing && <form className="panel-inst-form panel-inst-editor" onSubmit={saveEdit}>
@@ -73,7 +81,7 @@ export default function JornadaGestion({ jornada, institucionId, comunidades, on
       </form>}
     </>}
     {pending > 0 && jornada.estado === 'publicada' && <p className="panel-inst-sub">Resuelve las {pending} solicitud(es) pendientes antes de cerrar las inscripciones.</p>}
-    {accepted > 0 && jornada.estado === 'publicada' && <p className="panel-inst-sub">Hay {accepted} persona(s) aceptadas; la cancelación DEMO está bloqueada para proteger sus solicitudes.</p>}
+    {accepted > 0 && jornada.estado === 'publicada' && <p className="panel-inst-sub">Hay {accepted} persona(s) aceptadas; no se puede cancelar para proteger sus solicitudes.</p>}
     {options.length > 0 && <form className="panel-inst-lifecycle" onSubmit={changeStatus}>
       <label htmlFor={`action-${jornada.id}`}>Cambiar estado de la jornada</label>
       <select id={`action-${jornada.id}`} value={selectedAction} required onChange={e => setSelectedAction(e.target.value)}><option value="">Selecciona una acción</option>{options.map(a => <option key={a} value={a}>{actions[a]}</option>)}</select>

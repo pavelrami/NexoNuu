@@ -9,7 +9,7 @@ import MisPostulaciones from './pages/MisPostulaciones.jsx';
 import Voluntariado from './pages/Voluntariado.jsx';
 import Instituciones from './pages/Instituciones.jsx';
 import SolicitarInstitucion from './pages/SolicitarInstitucion.jsx';
-import AdminInstituciones from './pages/AdminInstituciones.jsx';
+import AdminPanel from './pages/AdminPanel.jsx';
 import PanelInstitucional from './pages/PanelInstitucional.jsx';
 import Seguimiento from './pages/Seguimiento.jsx';
 import Login from './pages/Login.jsx';
@@ -71,13 +71,14 @@ export default function App() {
     <Route path="/instituciones" element={<Instituciones/>}/>
     <Route path="/instituciones/solicitar" element={<Private><Suave><SolicitarInstitucion/></Suave></Private>}/>
     <Route path="/panel-institucional" element={<Private><Suave><PanelInstitucional/></Suave></Private>}/>
-    <Route path="/admin/instituciones" element={<AdminOnly><Suave><AdminInstituciones/></Suave></AdminOnly>}/>
+    <Route path="/admin" element={<AdminOnly><Suave><AdminPanel/></Suave></AdminOnly>}/>
+    <Route path="/admin/instituciones" element={<AdminOnly><Suave><AdminPanel inicial="instituciones"/></Suave></AdminOnly>}/>
     <Route path="/seguimiento" element={<Seguimiento/>}/>
     <Route path="/iniciar-sesion" element={<Login/>}/>
     <Route path="/registro" element={<Registro/>}/>
-    <Route path="/verificar-correo" element={<Suave><VerificarCorreo/></Suave>}/>
-    <Route path="/olvide-contrasena" element={<Suave><OlvideContrasena/></Suave>}/>
-    <Route path="/restablecer-contrasena" element={<Suave><RestablecerContrasena/></Suave>}/>
+    <Route path="/verificar-correo" element={<VerificarCorreo/>}/>
+    <Route path="/olvide-contrasena" element={<OlvideContrasena/>}/>
+    <Route path="/restablecer-contrasena" element={<RestablecerContrasena/>}/>
     <Route path="/verificar-telefono" element={<Private><Suave><VerificarTelefono/></Suave></Private>}/>
     <Route path="/mi-espacio" element={<Private><Suave><MiEspacio/></Suave></Private>}/>
     <Route path="/mi-perfil-voluntario" element={<Private><Suave><PerfilVoluntario/></Suave></Private>}/>

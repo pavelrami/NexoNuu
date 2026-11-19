@@ -182,7 +182,7 @@ export default function Header() {
           {user ? <>
             <Link className="btn btn-primary" to="/mi-espacio" onClick={() => setOpened(false)}>Mi espacio</Link>
             {esRepresentante && <Link className="btn btn-ghost-light" to="/panel-institucional" onClick={() => setOpened(false)}>Panel institucional</Link>}
-            {esAdmin && <Link className="btn btn-ghost-light" to="/admin/instituciones" onClick={() => setOpened(false)}>Administración</Link>}
+            {esAdmin && <Link className="btn btn-ghost-light" to="/admin" onClick={() => setOpened(false)}>Administración</Link>}
             <button type="button" className="btn btn-ghost-light" onClick={exit} disabled={leaving}>{leaving ? 'Saliendo…' : 'Cerrar sesión'}</button>
           </> : <>
             <Link className="btn btn-light" to="/iniciar-sesion" onClick={() => setOpened(false)}>Iniciar sesión</Link>

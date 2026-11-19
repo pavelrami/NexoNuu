@@ -1,14 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { seguimientoDemoHabilitado, validateSeguimiento, confirmadosValidos } from '../src/lib/jornadaSeguimiento.js';
-const opciones = { nodeEnv: 'development', demoFlag: '1', institutionName: 'Comunidad Ohel' };
+import { seguimientoHabilitado, validateSeguimiento, confirmadosValidos } from '../src/lib/jornadaSeguimiento.js';
+const opciones = { demo: true };
 const j = { es_demo: true, estado: 'publicada' };
-test('seguimiento DEMO requiere desarrollo y jornada habilitada', () => {
-  assert.equal(seguimientoDemoHabilitado(j, opciones), true);
-  assert.equal(seguimientoDemoHabilitado({ ...j, estado: 'borrador' }, opciones), false);
-  assert.equal(seguimientoDemoHabilitado({ ...j, es_demo: false }, opciones), false);
-  assert.equal(seguimientoDemoHabilitado(j, { ...opciones, nodeEnv: 'production' }), false);
-  assert.equal(seguimientoDemoHabilitado({ ...j, estado: 'cerrada' }, opciones), true);
+test('seguimiento para jornadas publicadas, cerradas o finalizadas', () => {
+  assert.equal(seguimientoHabilitado(j, opciones), true);
+  assert.equal(seguimientoHabilitado({ ...j, estado: 'borrador' }, opciones), false);
+  assert.equal(seguimientoHabilitado({ ...j, es_demo: false }), true);
+  assert.equal(seguimientoHabilitado(j, { demo: false }), false);
+  assert.equal(seguimientoHabilitado({ ...j, estado: 'cerrada' }, opciones), true);
 });
 test('no acepta resúmenes breves o excesivos', () => {
   assert.equal(validateSeguimiento({ resumen: 'Muy corto', participantesConfirmados: 0 }).ok, false);

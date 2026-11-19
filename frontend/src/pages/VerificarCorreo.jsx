@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { verifyEmail } from '../api.js';
+import AuthLayout from '../components/AuthLayout.jsx';
+import { Icon } from '../components/Icons.jsx';
+
 export default function VerificarCorreo() {
   const [params] = useSearchParams();
   const [status, setStatus] = useState({ phase: 'loading', message: 'Verificando enlace…' });
@@ -15,10 +18,17 @@ export default function VerificarCorreo() {
     verifyEmail(token).then((data) => setStatus({ phase: 'done', message: data.message }))
       .catch((e) => setStatus({ phase: 'error', message: e.message }));
   }, [params]);
-  return <section className="container inner-page" style={{ maxWidth: 790 }}>
-    <span className="section-kicker">Seguridad · Nexo Ñuu</span><h1>Verificar correo electrónico</h1>
-    <div className={status.phase === 'error' ? 'notice notice-warning' : 'notice'} role="status">{status.message}</div>
-    <p style={{ marginTop: 22 }}><Link className="btn btn-primary" to="/iniciar-sesion">Ir a iniciar sesión</Link></p>
-    {status.phase === 'error' && <p>Si expiró el enlace, entra a la pantalla de inicio de sesión para solicitar otro.</p>}
-  </section>;
+  const ok = status.phase === 'done';
+  return <AuthLayout kicker="Seguridad · Nexo Ñuu" titulo={ok ? '¡Correo confirmado!' : status.phase === 'error' ? 'No pudimos confirmar tu correo' : 'Confirmando tu correo…'}
+    panelTitulo="Bienvenida a Nexo Ñuu" panelTexto="Con tu correo confirmado ya puedes completar tu perfil y postularte a jornadas.">
+    <div className="registro-enviado" role="status">
+      <span className={`registro-icono${status.phase === 'error' ? ' registro-icono--error' : ''}`}><Icon name={ok ? 'check' : status.phase === 'error' ? 'close' : 'mail'} size={28} /></span>
+      <p>{status.message}</p>
+      {ok && <Link className="btn btn-primary" to="/iniciar-sesion">Iniciar sesión <Icon name="arrow" size={17} /></Link>}
+      {status.phase === 'error' && <>
+        <p className="auth-muted">Si el enlace expiró, entra a Iniciar sesión con tu correo y usa “Reenviar correo de verificación”.</p>
+        <Link className="btn btn-outline" to="/iniciar-sesion">Ir a iniciar sesión</Link>
+      </>}
+    </div>
+  </AuthLayout>;
 }

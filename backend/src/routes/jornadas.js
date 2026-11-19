@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { pool } from '../db.js';
 import { buildJornadasQuery, parseJornadasFilters } from '../lib/jornadasFilters.js';
-import { allowLocalDemo, canApplyToJornada } from '../lib/postulacionesRules.js';
+import { allowDemo, canApplyToJornada } from '../lib/postulacionesRules.js';
 
 const router = Router();
 router.use((_req, res, next) => {
@@ -85,7 +85,7 @@ router.get('/:id', async (req, res) => {
       message: 'La jornada no existe o no esta disponible como convocatoria vigente.'
     });
     const jornada = result.rows[0];
-    const puedePostular = canApplyToJornada(jornada, { localDemo: allowLocalDemo() });
+    const puedePostular = canApplyToJornada(jornada, { demo: allowDemo() });
     res.json({ jornada: { ...jornada, puedePostular } });
   } catch (error) {
     console.error('Error en detalle de jornada:', error.code || error.message);

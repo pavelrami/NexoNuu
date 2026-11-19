@@ -2,7 +2,9 @@ import { Router } from 'express';
 import { pool } from '../db.js';
 import { clearSessionCookie, hashPassword, makeToken, normalizeEmail, readCookie, sessionCookie, SESSION_MS, tokenHash, validEmail, validPassword, verifyPassword } from '../lib/security.js';
 import { limitRequests, sameOriginWrite } from '../lib/limits.js';
-import { sendVerificationEmail, sendPasswordResetEmail } from '../services/email.js';
+import { sendVerificationEmail, sendPasswordResetEmail, emailConfigurado } from '../services/email.js';
+import { dominioRecibeCorreo } from '../lib/emailDomain.js';
+import { googleConfigurado } from './google.js';
 
 const auth = Router();
 auth.use((_req, res, next) => {
@@ -15,6 +17,12 @@ const registrationLimit = limitRequests({ prefix: 'registro', max: 8, windowMs: 
 const loginLimit = limitRequests({ prefix: 'login', max: 15, windowMs: 15 * 60_000 });
 const emailLimit = limitRequests({ prefix: 'correo', max: 4, windowMs: 60 * 60_000 });
 const genericMessage = 'Si la cuenta puede recibir un enlace, se enviarán instrucciones de verificación.';
+const correoReal = () => (process.env.EMAIL_MODE || 'console') !== 'console';
+
+// Qué opciones de acceso están disponibles en este servidor (sin revelar secretos).
+auth.get('/proveedores', (_req, res) => {
+  res.json({ google: googleConfigurado(), correo: correoReal() ? 'bandeja' : 'terminal', correoConfigurado: emailConfigurado() });
+});
 
 async function createEmailToken(client, userId) {
   const token = makeToken();
@@ -29,6 +37,11 @@ auth.post('/registro', registrationLimit, async (req, res) => {
   const email = normalizeEmail(correo);
   if (typeof nombre !== 'string' || nombre.trim().length < 2 || nombre.trim().length > 140 || !validEmail(email) || !validPassword(password)) {
     return res.status(400).json({ code: 'DATOS_INVALIDOS', message: 'Indica un nombre de 2 a 140 caracteres, correo válido y contraseña de 12 a 128 caracteres.' });
+  }
+  // Solo correos que existen: el dominio debe recibir correo y después se confirma el buzón con un enlace.
+  const dominio = await dominioRecibeCorreo(email);
+  if (!dominio.ok) {
+    return res.status(400).json({ code: 'CORREO_INEXISTENTE', message: 'Ese correo no puede recibir mensajes: el dominio no existe o no tiene buzones. Revisa que esté bien escrito.' });
   }
   const client = await pool.connect().catch(() => null);
   if (!client) return res.status(503).json({ code: 'BASE_NO_DISPONIBLE', message: 'No es posible conectar a PostgreSQL.' });
@@ -56,8 +69,10 @@ auth.post('/registro', registrationLimit, async (req, res) => {
     return res.status(500).json({ code: 'REGISTRO_FALLIDO', message: 'No fue posible crear la cuenta. Comprueba la migración de autenticación.' });
   } finally { client.release(); }
   try {
-    await sendVerificationEmail(email, token);
-    return res.status(201).json({ message: 'Cuenta creada. Verifica tu correo antes de iniciar sesión.', requiereVerificacion: true });
+    await sendVerificationEmail(email, token, nombre.trim());
+    return res.status(201).json({ message: correoReal()
+      ? `Cuenta creada. Te enviamos un enlace a ${email}: ábrelo para activar tu cuenta (revisa también la carpeta de spam).`
+      : 'Cuenta creada. En modo local el enlace de verificación aparece en la terminal del backend.', requiereVerificacion: true });
   } catch (error) {
     console.error('Error al enviar correo de verificacion:', error.message);
     return res.status(201).json({ message: 'Cuenta creada, pero no se pudo enviar la verificación. Utiliza Reenviar correo cuando el servicio esté disponible.', requiereVerificacion: true, envioPendiente: true });
@@ -68,14 +83,15 @@ auth.post('/reenviar-verificacion', emailLimit, async (req, res) => {
   const email = normalizeEmail(req.body?.correo);
   if (!validEmail(email)) return res.status(400).json({ code: 'CORREO_INVALIDO', message: 'Escribe un correo válido.' });
   const client = await pool.connect();
-  let token;
+  let token, nombreDestino;
   try {
     await client.query('BEGIN');
-    const result = await client.query('SELECT id, correo, correo_verificado_en FROM usuarios WHERE correo=$1 FOR UPDATE', [email]);
+    const result = await client.query('SELECT id, nombre, correo, correo_verificado_en FROM usuarios WHERE correo=$1 FOR UPDATE', [email]);
     if (result.rowCount && !result.rows[0].correo_verificado_en) {
       const last = await client.query('SELECT creado_en FROM verificaciones_correo WHERE usuario_id=$1 ORDER BY creado_en DESC LIMIT 1', [result.rows[0].id]);
       if (!last.rowCount || Date.now() - new Date(last.rows[0].creado_en).getTime() > 60_000) {
         token = await createEmailToken(client, result.rows[0].id);
+        nombreDestino = result.rows[0].nombre;
       }
     }
     await client.query('COMMIT');
@@ -84,7 +100,7 @@ auth.post('/reenviar-verificacion', emailLimit, async (req, res) => {
     console.error('Error al reenviar verificacion:', error.code || error.message);
     return res.status(500).json({ code: 'CORREO_FALLIDO', message: 'No fue posible procesar la solicitud.' });
   } finally { client.release(); }
-  if (token) await sendVerificationEmail(email, token).catch((e) => console.error('Error de envio:', e.message));
+  if (token) await sendVerificationEmail(email, token, nombreDestino).catch((e) => console.error('Error de envio:', e.message));
   return res.status(202).json({ message: genericMessage });
 });
 
@@ -172,19 +188,20 @@ auth.post('/logout', async (req, res) => {
 
 
 // Respuesta generica para no revelar si existe una cuenta.
-const recoveryMessage = 'Si existe una cuenta verificada con ese correo, recibiras instrucciones para recuperar el acceso.';
+const recoveryMessage = 'Si existe una cuenta verificada con ese correo, recibirás un enlace para crear una nueva contraseña. Revisa tu bandeja y la carpeta de spam.';
 auth.post('/solicitar-recuperacion', limitRequests({ prefix: 'recuperar', max: 4, windowMs: 60 * 60_000 }), async (req, res) => {
   const email = normalizeEmail(req.body?.correo);
-  if (!validEmail(email)) return res.status(400).json({ code: 'CORREO_INVALIDO', message: 'Escribe un correo valido.' });
+  if (!validEmail(email)) return res.status(400).json({ code: 'CORREO_INVALIDO', message: 'Escribe un correo válido.' });
   const client = await pool.connect();
-  let token;
+  let token, nombreDestino;
   try {
     await client.query('BEGIN');
-    const found = await client.query(`SELECT id FROM usuarios
+    const found = await client.query(`SELECT id, nombre FROM usuarios
       WHERE correo=$1 AND estado='activo' AND correo_verificado_en IS NOT NULL
       FOR UPDATE`, [email]);
     if (found.rowCount) {
       const userId = found.rows[0].id;
+      nombreDestino = found.rows[0].nombre;
       const previous = await client.query(`SELECT creado_en FROM recuperaciones_password
         WHERE usuario_id=$1 ORDER BY creado_en DESC LIMIT 1`, [userId]);
       // No generar varios tokens durante el mismo minuto.
@@ -201,14 +218,14 @@ auth.post('/solicitar-recuperacion', limitRequests({ prefix: 'recuperar', max: 4
     console.error('Error de solicitud de recuperacion:', error.code || error.message);
     return res.status(500).json({ code: 'RECUPERACION_FALLIDA', message: 'No fue posible procesar la solicitud.' });
   } finally { client.release(); }
-  if (token) await sendPasswordResetEmail(email, token).catch(e => console.error('No pudo enviarse la recuperacion:', e.message));
+  if (token) await sendPasswordResetEmail(email, token, nombreDestino).catch(e => console.error('No pudo enviarse la recuperacion:', e.message));
   return res.status(202).json({ message: recoveryMessage });
 });
 
 auth.post('/restablecer-contrasena', limitRequests({ prefix: 'restablecer', max: 10, windowMs: 15 * 60_000 }), async (req, res) => {
   const { token, password } = req.body || {};
   if (typeof token !== 'string' || !/^[A-Za-z0-9_-]{43}$/.test(token) || !validPassword(password)) {
-    return res.status(400).json({ code: 'DATOS_INVALIDOS', message: 'Enlace invalido o contrasena invalida (12 a 128 caracteres).' });
+    return res.status(400).json({ code: 'DATOS_INVALIDOS', message: 'Enlace inválido o contraseña inválida (12 a 128 caracteres).' });
   }
   const passwordHash = await hashPassword(password);
   const client = await pool.connect();
@@ -221,7 +238,7 @@ auth.post('/restablecer-contrasena', limitRequests({ prefix: 'restablecer', max:
       FOR UPDATE OF r`, [tokenHash(token)]);
     if (!result.rowCount) {
       await client.query('ROLLBACK');
-      return res.status(400).json({ code: 'ENLACE_EXPIRADO', message: 'Este enlace ya se utilizo o expiro. Solicita otro.' });
+      return res.status(400).json({ code: 'ENLACE_EXPIRADO', message: 'Este enlace ya se utilizó o expiró. Solicita otro.' });
     }
     const { id, usuario_id } = result.rows[0];
     await client.query('UPDATE usuarios SET password_hash=$1 WHERE id=$2', [passwordHash, usuario_id]);
@@ -230,7 +247,7 @@ auth.post('/restablecer-contrasena', limitRequests({ prefix: 'restablecer', max:
     await client.query('UPDATE sesiones_usuario SET revocado_en=now() WHERE usuario_id=$1 AND revocado_en IS NULL', [usuario_id]);
     await client.query('COMMIT');
     res.set('Set-Cookie', clearSessionCookie());
-    return res.json({ message: 'Contrasena actualizada. Inicia sesion con tu nueva contrasena.' });
+    return res.json({ message: 'Contraseña actualizada. Inicia sesión con tu nueva contraseña.' });
   } catch (error) {
     await client.query('ROLLBACK').catch(() => {});
     console.error('Error al restablecer contrasena:', error.code || error.message);

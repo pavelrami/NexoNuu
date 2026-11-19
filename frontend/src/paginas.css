@@ -287,3 +287,135 @@
   .vol-foto{min-height:240px}
   .inst-cta{padding:20px}
 }
+
+/* =========================================================
+   Incremento 8: acceso con Google, cuentas, administración
+   y panel institucional
+   ========================================================= */
+.google-acceso{display:grid;gap:10px;margin-top:22px}
+.btn-google{width:100%;background:#fff;color:#1f1f1f;border:1.5px solid var(--linea-2);font-family:var(--font-body);font-weight:600}
+.btn-google:hover{background:#f7f8f8;border-color:#9aa9a3}
+.btn-google.is-pendiente{opacity:.75}
+.google-aviso{margin:0;font-size:.82rem;line-height:1.5;color:var(--ocre-700);background:var(--ocre-100);border-radius:10px;padding:10px 12px}
+.separador-o{display:flex;align-items:center;gap:12px;color:var(--tinta-3);font-size:.8rem;margin-top:6px}
+.separador-o::before,.separador-o::after{content:"";flex:1;height:1px;background:var(--linea)}
+.auth-form--tras-google{margin-top:6px}
+.registro-enviado{display:flex;flex-direction:column;align-items:center;text-align:center;gap:12px;margin:22px 0 8px;padding:24px;border-radius:var(--r-lg);background:var(--menta-50);border:1px solid var(--menta-200)}
+.registro-enviado h2{font-size:1.3rem}
+.registro-enviado p{margin:0;color:var(--tinta-2);line-height:1.6}
+.registro-enviado .btn{width:auto}
+.registro-icono{display:grid;place-items:center;width:60px;height:60px;border-radius:18px;background:var(--verde-700);color:#fff;transform:rotate(45deg)}
+.registro-icono svg{transform:rotate(-45deg)}
+.registro-icono--error{background:var(--terracota)}
+
+/* Botones de decisión */
+.btn-peligro{color:#9b3a22;border-color:#e2b8a8}
+.btn-peligro:hover{background:#fff2eb;border-color:#9b3a22}
+.btn-peligro-solido{background:#a8432a;box-shadow:none}
+.btn-peligro-solido:hover{background:#86331f}
+.accion-motivo{display:grid;gap:8px;padding:12px;border-radius:12px;background:var(--papel);border:1px solid var(--linea);min-width:min(320px,100%);flex:1}
+.accion-motivo label{font-size:.8rem;font-weight:700;color:var(--tinta)}
+.accion-motivo textarea{width:100%;border:1.5px solid var(--linea-2);border-radius:10px;padding:8px 10px;font:inherit;font-size:.9rem;resize:vertical;background:#fff}
+.accion-motivo textarea:focus{outline:3px solid var(--ocre-500);outline-offset:1px}
+.accion-motivo-botones{display:flex;gap:8px;flex-wrap:wrap}
+
+/* Administración */
+.admin-kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin:8px 0 26px}
+.admin-kpis div{display:flex;flex-direction:column;gap:4px;padding:16px;border-radius:var(--r-md);background:#fff;border:1px solid var(--linea)}
+.admin-kpis strong{font-family:var(--font-head);font-size:1.8rem;font-weight:800;color:var(--verde-700);line-height:1}
+.admin-kpis span{font-size:.8rem;color:var(--tinta-2)}
+.admin-kpis .is-alerta{background:var(--ocre-100);border-color:#efd9ad}
+.admin-kpis .is-alerta strong{color:var(--ocre-700)}
+.admin-tabs{display:flex;gap:6px;flex-wrap:wrap;border-bottom:1px solid var(--linea);margin-bottom:22px}
+.admin-tab{display:inline-flex;align-items:center;gap:8px;min-height:46px;padding:10px 16px;border:0;border-bottom:3px solid transparent;background:transparent;font-family:var(--font-head);font-weight:700;font-size:.92rem;color:var(--tinta-2);cursor:pointer;margin-bottom:-1px}
+.admin-tab:hover{color:var(--verde-700)}
+.admin-tab.is-active{color:var(--verde-700);border-bottom-color:var(--verde-700)}
+.admin-tab-n{font-size:.72rem;padding:2px 8px;border-radius:999px;background:var(--menta-100);color:var(--verde-800)}
+.admin-panel h2{font-size:1.2rem;margin:8px 0 14px}
+.admin-panel h3{font-size:1.1rem;margin:0}
+.admin-vacio{padding:18px;border-radius:12px;border:1.5px dashed var(--linea-2);color:var(--tinta-2);background:#fff}
+.admin-sub{font-size:.85rem;color:var(--tinta-2)}
+.admin-institution .admin-actions,.admin-usuarios .admin-actions,.admin-jornadas .admin-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start;margin-top:10px}
+.admin-personas{list-style:none;margin:12px 0 0;padding:0;display:grid;gap:8px}
+.admin-personas li{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:var(--papel);font-size:.9rem}
+.admin-personas li>span:first-child{flex:1;min-width:200px}
+.admin-buscar{max-width:420px;margin-bottom:16px}
+.admin-buscar input{width:100%;min-height:46px;border:1.5px solid var(--linea-2);border-radius:12px;padding:10px 12px;background:#fff}
+.admin-usuarios,.admin-jornadas{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.admin-usuarios li,.admin-jornadas li{display:flex;flex-wrap:wrap;justify-content:space-between;gap:14px;padding:16px 18px;border-radius:var(--r-md);background:#fff;border:1px solid var(--linea)}
+.admin-usuarios li.is-bloqueado{background:#fff7f4;border-color:#f0cfc3}
+.admin-usuario-datos,.admin-jornadas li>div:first-child{display:flex;flex-direction:column;gap:4px;min-width:min(100%,260px);flex:1}
+.admin-usuario-datos span,.admin-jornadas li span{font-size:.88rem;color:var(--tinta-2)}
+.admin-usuario-datos small{font-size:.76rem;color:var(--tinta-3)}
+.admin-usuario-datos em{font-style:normal;color:var(--ocre-700);font-weight:600}
+.admin-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.admin-chip{font-size:.72rem!important;font-weight:700;padding:3px 9px;border-radius:999px;background:var(--menta-100);color:var(--verde-800)!important}
+.admin-chip--administrador{background:var(--verde-800);color:#fff!important}
+.admin-chip--representante{background:var(--ocre-100);color:var(--ocre-700)!important}
+.admin-chip--aviso{background:var(--ocre-100);color:var(--ocre-700)!important}
+.admin-state-publicada{color:#075d60;background:#e9f6f2}
+.admin-state-borrador,.admin-state-cerrada{color:#6f581b;background:#fff4d5}
+.admin-state-cancelada,.admin-state-bloqueado{color:#a93c33;background:#fff0ed}
+.admin-state-finalizada{color:#fff;background:var(--verde-800)}
+
+/* Panel institucional */
+.panel-inst-top{display:grid;gap:14px;margin-bottom:22px}
+.panel-inst-banner{align-items:center}
+.panel-inst-banner>div{display:flex;flex-direction:column;gap:4px}
+.panel-inst-banner span{display:inline-flex;align-items:center;gap:6px}
+.panel-inst-kpis{display:flex;flex-wrap:wrap;gap:8px 18px;list-style:none;margin:0;padding:0;font-size:.88rem;color:var(--tinta-2)}
+.panel-inst-kpis strong{font-family:var(--font-head);font-size:1.15rem;color:var(--verde-700)}
+.panel-inst-kpis .is-alerta strong{color:var(--ocre-700)}
+.panel-inst-grid{grid-template-columns:minmax(0,.9fr) minmax(0,1.3fr);align-items:start}
+.panel-inst-card{background:#fff}
+.panel-inst-card h2{display:flex;align-items:center;gap:8px}
+.panel-inst-card--form{position:sticky;top:calc(var(--header-h) + 20px)}
+.panel-inst-check{display:flex!important;align-items:center;gap:8px;font-weight:600!important;font-size:.88rem!important;margin-top:4px}
+.panel-inst-check input{width:18px!important;height:18px;min-height:0!important;accent-color:var(--verde-700)}
+.panel-inst-item{background:var(--papel)}
+.panel-inst-item.is-open{border-color:var(--verde-600);background:#fff}
+.panel-inst-item-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap}
+.panel-inst-item p{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.panel-inst-badges{display:flex;gap:6px;flex-wrap:wrap}
+.estado-j{font-size:.72rem;font-weight:800;padding:4px 10px;border-radius:999px;background:var(--menta-100);color:var(--verde-800)}
+.estado-j--publicada{background:var(--verde-700);color:#fff}
+.estado-j--borrador{background:var(--ocre-100);color:var(--ocre-700)}
+.estado-j--cancelada{background:#fff0ed;color:#a93c33}
+.estado-j--demo{background:#fff;border:1px solid #efd9ad;color:var(--ocre-700)}
+.panel-inst-cuenta .is-alerta{color:var(--ocre-700);font-weight:700}
+.panel-inst-acciones{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.panel-inst-acciones .btn,.panel-inst-app-actions .btn{margin:0}
+.postulante{border-left:4px solid var(--linea-2)!important}
+.postulante--pendiente{border-left-color:var(--ocre-500)!important}
+.postulante--aceptada{border-left-color:var(--verde-500)!important}
+.postulante--rechazada,.postulante--retirada{opacity:.75}
+.postulante-cabeza{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.estado-p{font-size:.72rem;font-weight:800;padding:3px 9px;border-radius:999px;background:var(--menta-100);color:var(--verde-800)}
+.estado-p--pendiente{background:var(--ocre-100);color:var(--ocre-700)}
+.estado-p--aceptada{background:var(--verde-700);color:#fff}
+.estado-p--rechazada,.estado-p--retirada{background:#f1f1ef;color:var(--tinta-2)}
+.postulante-datos{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin:4px 0;font-size:.86rem}
+.postulante-datos dt{color:var(--tinta-3);font-weight:700}
+.postulante-datos dd{margin:0;color:var(--tinta)}
+.postulante-datos a{color:var(--verde-700);font-weight:700;text-decoration:underline}
+.postulante-bio{font-size:.86rem;color:var(--tinta-2);font-style:italic;margin:0}
+
+@media (max-width:1100px){
+  .admin-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .panel-inst-grid{grid-template-columns:1fr}
+  .panel-inst-card--form{position:static}
+}
+@media (max-width:640px){
+  .admin-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .admin-tab{padding:10px 10px;font-size:.85rem}
+  .postulante-datos{grid-template-columns:1fr}
+}
+
+/* Panel institucional: controles que nunca rebasan su tarjeta y gestión plegable */
+.panel-inst-card{min-width:0}
+.panel-inst-form{min-width:0}
+.panel-inst-form :is(input,select,textarea),.panel-inst-manage :is(input,select,textarea){max-width:100%;min-width:0;box-sizing:border-box}
+.panel-inst-two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.panel-inst-toggle{justify-self:start;margin-top:10px}
+.panel-inst-manage-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.panel-inst-follow .btn{min-height:44px;padding:9px 15px;font-size:.88rem}

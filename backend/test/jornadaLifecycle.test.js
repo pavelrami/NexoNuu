@@ -1,11 +1,18 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { draftCanEdit, evaluateLifecycle, validateLifecycleAction, validateDraftEdit } from '../src/lib/jornadaLifecycle.js';
-const opciones = { nodeEnv: 'development', demoFlag: '1', institutionName: 'Comunidad Ohel' };
+import { canPublish, draftCanEdit, evaluateLifecycle, validateLifecycleAction, validateDraftEdit } from '../src/lib/jornadaLifecycle.js';
+const opciones = { demo: true };
 const jornada = { estado: 'publicada', es_demo: true, inicio: '2099-10-01T10:00:00Z', fin: '2099-10-02T10:00:00Z' };
-test('gestion del ciclo de vida DEMO prohibida en produccion o sin bandera', () => {
-  assert.equal(evaluateLifecycle({ jornada, accion: 'cerrar', pendientes: 0, aceptadas: 1, opciones: { ...opciones, nodeEnv: 'production' } }).ok, false);
-  assert.equal(evaluateLifecycle({ jornada: { ...jornada, es_demo: false }, accion: 'cerrar', pendientes: 0, aceptadas: 1, opciones }).ok, false);
+test('jornadas DEMO solo con modo demo; jornadas reales siempre gestionables', () => {
+  assert.equal(evaluateLifecycle({ jornada, accion: 'cerrar', pendientes: 0, aceptadas: 1, opciones: { demo: false } }).ok, false);
+  assert.equal(evaluateLifecycle({ jornada: { ...jornada, es_demo: false }, accion: 'cerrar', pendientes: 0, aceptadas: 1, opciones: { demo: false } }).ok, true);
+});
+test('publicar solo borradores futuros', () => {
+  assert.equal(canPublish({ ...jornada, estado: 'borrador', es_demo: false }), true);
+  assert.equal(canPublish({ ...jornada, estado: 'borrador' }), false);
+  assert.equal(canPublish({ ...jornada, estado: 'borrador' }, opciones), true);
+  assert.equal(canPublish({ ...jornada, es_demo: false }), false);
+  assert.equal(canPublish({ ...jornada, estado: 'borrador', es_demo: false, inicio: '2020-01-01T00:00:00Z' }), false);
 });
 test('cerrar convocatoria sin pendientes preserva aceptaciones', () => {
   assert.deepEqual(evaluateLifecycle({ jornada, accion: 'cerrar', pendientes: 0, aceptadas: 1, opciones }), { ok: true, estado: 'cerrada', postulacionesHabilitadas: false });
@@ -25,7 +32,7 @@ test('motivos y acciones se validan', () => {
   assert.equal(validateLifecycleAction({ accion: 'borrar', motivo: 'Texto suficientemente largo' }).ok, false);
   assert.equal(validateLifecycleAction({ accion: 'cancelar', motivo: 'no' }).ok, false);
 });
-test('edicion solo de borradores futuros DEMO', () => {
+test('edicion solo de borradores futuros', () => {
   assert.equal(draftCanEdit({ ...jornada, estado: 'borrador' }, opciones), true);
   assert.equal(draftCanEdit(jornada, opciones), false);
   const future = '2099-10-01T10:00:00Z';

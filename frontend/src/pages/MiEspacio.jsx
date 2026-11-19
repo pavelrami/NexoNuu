@@ -113,15 +113,15 @@ export default function MiEspacio() {
         {user.roles?.includes('representante') && (
           <article>
             <h2>Mi panel institucional</h2>
-            <p>Consulta las instituciones que representas y crea jornadas DEMO en borrador.</p>
+            <p>Publica jornadas de tu institución y revisa a las personas voluntarias que se postulan.</p>
             <Link className="btn btn-primary" to="/panel-institucional">Abrir panel institucional</Link>
           </article>
         )}
         {esAdministrador && (
           <article>
-            <h2>Administración de instituciones</h2>
-            <p>Revisa solicitudes pendientes y autoriza representantes desde el panel administrativo.</p>
-            <Link className="btn btn-primary" to="/admin/instituciones">Abrir administración</Link>
+            <h2>Panel de administración</h2>
+            <p>Revisa solicitudes, autoriza instituciones y representantes, gestiona usuarios y modera jornadas.</p>
+            <Link className="btn btn-primary" to="/admin">Abrir administración</Link>
           </article>
         )}
         {esVoluntario && (

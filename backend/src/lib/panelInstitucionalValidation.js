@@ -1,4 +1,5 @@
 export const validInstitutionId = (value) => typeof value === 'string' && /^[1-9]\d{0,14}$/.test(value);
+
 export function validateNewJornada(body) {
   if (!body || typeof body !== 'object' || Array.isArray(body)) return { ok: false, message: 'Formulario invalido.' };
   const titulo = typeof body.titulo === 'string' ? body.titulo.trim() : '';
@@ -11,8 +12,20 @@ export function validateNewJornada(body) {
   const inicio = new Date(body.inicio), fin = new Date(body.fin);
   if (!Number.isFinite(inicio.getTime()) || !Number.isFinite(fin.getTime()) || inicio.getTime() <= Date.now()) return { ok: false, message: 'La jornada debe comenzar en una fecha futura.' };
   if (fin <= inicio || fin.getTime() - inicio.getTime() > 7 * 24 * 3600 * 1000) return { ok: false, message: 'La fecha de cierre debe ser posterior al inicio, con duracion maxima de 7 dias.' };
-  return { ok: true, value: { titulo, descripcion, comunidadId: String(body.comunidadId), cupo: body.cupo, inicio: inicio.toISOString(), fin: fin.toISOString() } };
+  const esDemo = body.esDemo === true;
+  return { ok: true, value: { titulo, descripcion, comunidadId: String(body.comunidadId), cupo: body.cupo, inicio: inicio.toISOString(), fin: fin.toISOString(), esDemo } };
 }
-export function allowedDemoPublish({ nodeEnv, demoFlag, institutionName }) {
-  return nodeEnv === 'development' && demoFlag === '1' && /demo|fictici|prueba|ohel/i.test(institutionName || '');
+
+/** Las jornadas de demostracion se gestionan solo si el servidor lo permite (ALLOW_DEMO_POSTULACIONES=1). */
+export function demoHabilitado(env = process.env) {
+  return env.ALLOW_DEMO_POSTULACIONES === '1';
+}
+
+/**
+ * Una jornada real siempre es gestionable por su institucion verificada.
+ * Una jornada de demostracion, solo con el modo demo activo.
+ * La pertenencia a la institucion y su verificacion se comprueban en la ruta.
+ */
+export function puedeGestionarJornada(j, { demo = false } = {}) {
+  return Boolean(j) && (j.es_demo !== true || demo === true);
 }

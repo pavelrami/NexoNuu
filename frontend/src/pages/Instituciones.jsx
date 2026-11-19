@@ -58,7 +58,7 @@ export default function Instituciones() {
         </div>
         {(esRepresentante || esAdmin) && <div className="inst-accesos" data-reveal>
           {esRepresentante && <Link to="/panel-institucional" className="chip-link"><Icon name="building" size={15} /> Ir a mi panel institucional</Link>}
-          {esAdmin && <Link to="/admin/instituciones" className="chip-link"><Icon name="shield" size={15} /> Administrar solicitudes</Link>}
+          {esAdmin && <Link to="/admin" className="chip-link"><Icon name="shield" size={15} /> Administrar solicitudes</Link>}
         </div>}
       </div>
       <ol className="inst-pila">
