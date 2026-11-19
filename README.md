@@ -1,5 +1,7 @@
 # Nexo Ñuu — Incremento 1 (base de implementación)
 
+> **Incremento 7 (sitio público animado, datos oficiales y publicación en VPS):** consulta [LEEME.md](LEEME.md).
+
 Proyecto integrador de Gestión de Proyectos de Software (SCG-1009).
 **Propósito:** plataforma web de concientización, información, vinculación, coordinación y seguimiento de iniciativas de alfabetización en Oaxaca. No imparte clases ni administra un padrón de personas sin alfabetización.
 

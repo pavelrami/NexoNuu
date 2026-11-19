@@ -34,6 +34,27 @@ router.get('/opciones', async (_req, res) => {
   }
 });
 
+// Incremento 7: referencia historica publica. Solo jornadas finalizadas de
+// instituciones verificadas; no admite postulaciones ni expone participantes.
+router.get('/historicas', async (_req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT j.id, j.titulo, j.descripcion, j.inicio, j.fin, j.es_demo,
+             c.nombre AS comunidad, c.municipio, c.region,
+             i.nombre AS institucion, i.sitio_web AS institucion_sitio
+      FROM jornadas j
+      JOIN instituciones i ON i.id = j.institucion_id
+      JOIN comunidades c ON c.id = j.comunidad_id
+      WHERE j.estado = 'finalizada' AND i.estado_verificacion = 'verificada'
+      ORDER BY j.inicio DESC, j.id DESC
+      LIMIT 24`);
+    return res.json({ jornadas: result.rows });
+  } catch (error) {
+    console.error('Error de jornadas historicas:', error.code || error.message);
+    return res.status(500).json({ code: 'HISTORICAS_FALLIDAS', message: 'No fue posible consultar las jornadas finalizadas.' });
+  }
+});
+
 // Detalle publico: solo jornadas futuras publicadas por instituciones verificadas.
 // Nunca devuelve cuentas, telefonos o informacion privada de participantes.
 router.get('/:id', async (req, res) => {

@@ -64,7 +64,7 @@ export function buildJornadasQuery(f) {
       WHERE jl.jornada_id = j.id AND jl.lengua_id = ${p}::bigint)`);
   }
   return {
-    text: `SELECT j.id, j.titulo, j.descripcion, j.inicio, j.fin,
+    text: `SELECT j.id, j.titulo, j.descripcion, j.inicio, j.fin, j.es_demo,
       c.nombre AS comunidad, c.municipio, c.region,
       i.nombre AS institucion,
       COUNT(*) OVER () AS total_coincidencias

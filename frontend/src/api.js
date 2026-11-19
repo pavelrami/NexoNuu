@@ -163,3 +163,7 @@ export const getRepresentativeSeguimientos = (institutionId, jornadaId) =>
   representativeRequest(`instituciones/${encodeURIComponent(institutionId)}/jornadas/${encodeURIComponent(jornadaId)}/seguimientos`);
 export const createRepresentativeSeguimiento = (institutionId, jornadaId, payload) =>
   representativeRequest(`instituciones/${encodeURIComponent(institutionId)}/jornadas/${encodeURIComponent(jornadaId)}/seguimientos`, { method: 'POST', payload });
+
+// Incremento 7: indicadores publicos agregados y referencia historica.
+export const getEstadisticas = ({ signal } = {}) => publicGet('/api/estadisticas', signal);
+export const getJornadasHistoricas = ({ signal } = {}) => publicGet('/api/jornadas/historicas', signal);

@@ -139,13 +139,14 @@ auth.post('/login', loginLimit, async (req, res) => {
 
 auth.get('/me', async (req, res) => {
   const raw = readCookie(req.get('cookie') || '');
-  if (!raw || !/^[A-Za-z0-9_-]{43}$/.test(raw)) return res.status(401).json({ code: 'SIN_SESION', message: 'Inicia sesión para continuar.' });
+  // Visitante sin sesión: respuesta 200 con user null (no es un error y no ensucia la consola).
+  if (!raw || !/^[A-Za-z0-9_-]{43}$/.test(raw)) return res.json({ user: null, code: 'SIN_SESION' });
   try {
     const result = await pool.query(`SELECT u.id, u.nombre, u.correo, u.correo_verificado_en, u.telefono_verificado_en
       FROM sesiones_usuario s JOIN usuarios u ON u.id = s.usuario_id
       WHERE s.token_hash=$1 AND s.revocado_en IS NULL AND s.expira_en > now()
         AND u.estado='activo' AND u.correo_verificado_en IS NOT NULL`, [tokenHash(raw)]);
-    if (!result.rowCount) return res.status(401).json({ code: 'SIN_SESION', message: 'La sesión expiró. Vuelve a iniciar sesión.' });
+    if (!result.rowCount) return res.json({ user: null, code: 'SIN_SESION', message: 'La sesión expiró. Vuelve a iniciar sesión.' });
     const user = result.rows[0];
     const roles = await pool.query('SELECT r.codigo FROM usuario_rol ur JOIN roles r ON r.id=ur.rol_id WHERE ur.usuario_id=$1', [user.id]);
     return res.json({ user: { id: user.id, nombre: user.nombre, correo: user.correo, roles: roles.rows.map((r) => r.codigo), telefonoVerificado: !!user.telefono_verificado_en } });
