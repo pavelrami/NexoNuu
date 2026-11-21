@@ -16,6 +16,7 @@ export default defineConfig({
         manualChunks(id) {
           if (!id.includes('node_modules')) return undefined;
           if (id.includes('gsap') || id.includes('lenis')) return 'movimiento';
+          if (id.includes('leaflet')) return 'mapa'; // solo se descarga al abrir el mapa del voluntariado
           if (id.includes('react')) return 'react';
           return 'vendor';
         },

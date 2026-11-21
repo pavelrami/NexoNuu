@@ -8,7 +8,9 @@ import {
 import { Icon } from '../components/Icons.jsx';
 import AccionConMotivo from '../components/AccionConMotivo.jsx';
 import PanelLayout, { entradaPanel } from '../components/panel/PanelLayout.jsx';
-import MapaOaxaca, { claveRegion, RegionChips } from '../components/panel/MapaOaxaca.jsx';
+import { claveRegion, RegionChips } from '../components/panel/MapaOaxaca.jsx';
+import { LineaAcumulada, MedioAnillo } from '../components/panel/graficas.jsx';
+import { REGIONES } from '../data/fuentes.js';
 import { Kpi, Tarjeta, Chip, EstadoJornada, Vacio, Mensajes, PanelCabeza, Filtros, Avatar,
   fechaCorta, fechaMedia, hora, haceCuanto, plural, porMes, acumulado, acumuladoDesde, primerNombre } from '../components/panel/piezas.jsx';
 import { useMotion } from '../motion/useMotion.js';
@@ -22,7 +24,12 @@ const ESTADOS = {
 };
 const ROLES = { voluntario: ['Voluntariado', 'menta'], representante: ['Institución', 'aviso'], administrador: ['Administración', 'oscuro'] };
 function Estado({ value }) { const [t, tono] = ESTADOS[value] || [value, 'neutro']; return <Chip tono={tono}>{t}</Chip>; }
-const VISTAS = { resumen: 'Resumen global', solicitudes: 'Solicitudes', instituciones: 'Instituciones', usuarios: 'Usuarios', jornadas: 'Jornadas' };
+const VISTAS = { resumen: 'Panel central', solicitudes: 'Validaciones', instituciones: 'Instituciones verificadas', usuarios: 'Usuarios y voluntariado', jornadas: 'Gestión de jornadas' };
+const ZONA = 'America/Mexico_City';
+const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+const nombreRegion = (k) => REGIONES.find((r) => r.clave === k)?.nombre || '';
+// Año y mes (0-11) de una fecha en la hora de Oaxaca.
+function anioMes(v) { const [a, m] = new Date(v).toLocaleDateString('en-CA', { timeZone: ZONA }).split('-'); return [Number(a), Number(m) - 1]; }
 const normal = (t = '') => t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
 export default function AdminPanel({ inicial = 'resumen' }) {
@@ -48,6 +55,7 @@ export default function AdminPanel({ inicial = 'resumen' }) {
   const [filtroI, setFiltroI] = useState('todas');
   const [filtroJ, setFiltroJ] = useState('todas');
   const [region, setRegion] = useState('');
+  const [regionG, setRegionG] = useState('');
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
   const [exito, setExito] = useState('');
@@ -101,13 +109,31 @@ export default function AdminPanel({ inicial = 'resumen' }) {
   const acept = publicadas.reduce((n, j) => n + Number(j.aceptadas || 0), 0);
   const pctCupo = cupo ? (acept / cupo) * 100 : 0;
   const vivas = jornadas.filter((j) => !['cancelada', 'finalizada'].includes(j.estado));
-  const conteoRegion = {};
-  vivas.forEach((j) => { const k = claveRegion(j.region || ''); if (k) conteoRegion[k] = (conteoRegion[k] || 0) + 1; });
-  const tonoPin = { publicada: 'verde', borrador: 'ocre' };
-  const pines = vivas.map((j) => ({ id: j.id, clave: claveRegion(j.region || ''), tono: tonoPin[j.estado] || 'gris' }));
-  const tablaJ = (region ? vivas.filter((j) => claveRegion(j.region || '') === region) : vivas).slice(0, 5);
+  const regionesActivas = new Set(publicadas.map((j) => claveRegion(j.region || '')).filter(Boolean)).size;
+  // Avance del año: jornadas (sin canceladas) acumuladas por mes de inicio, en la hora de Oaxaca.
+  const [anioMx, mesMx] = anioMes(new Date());
+  const jornadasAnio = jornadas.filter((j) => j.estado !== 'cancelada' && anioMes(j.inicio)[0] === anioMx);
+  const porRegionAnio = {};
+  jornadasAnio.forEach((j) => { const k = claveRegion(j.region || ''); if (k) porRegionAnio[k] = (porRegionAnio[k] || 0) + 1; });
+  const enRegionG = regionG ? jornadasAnio.filter((j) => claveRegion(j.region || '') === regionG) : jornadasAnio;
+  const puntosAnio = MESES.map((etiqueta, i) => ({ etiqueta, futuro: i > mesMx, valor: enRegionG.filter((j) => anioMes(j.inicio)[1] <= i).length }));
+  const statsG = {
+    aceptadas: enRegionG.reduce((n, j) => n + Number(j.aceptadas || 0), 0),
+    cupo: enRegionG.reduce((n, j) => n + Number(j.cupo || 0), 0),
+    municipios: new Set(enRegionG.map((j) => j.municipio)).size,
+  };
+  // Distribución de jornadas vigentes por institución: las tres con más jornadas y el resto en "Otras".
+  const porInst = {};
+  vivas.forEach((j) => { porInst[j.institucion] = (porInst[j.institucion] || 0) + 1; });
+  const ordenInst = Object.entries(porInst).sort((a, b) => b[1] - a[1]);
+  const distribucion = [...ordenInst.slice(0, 3).map(([nombre, valor]) => ({ nombre, valor })),
+    ...(ordenInst.length > 3 ? [{ nombre: 'Otras instituciones', valor: ordenInst.slice(3).reduce((n, [, v]) => n + v, 0), otras: true }] : [])];
+  const ultimasJ = [...jornadas].sort((a, b) => Number(b.id) - Number(a.id)).slice(0, 5);
+  // Voluntariado que ya se postuló (solo si la lista trae todas las cuentas; la API devuelve hasta 200).
+  const vols = usuarios.filter((u) => u.roles.includes('voluntario'));
+  const vinculos = { ok: usuarios.length < 200 && vols.length > 0, n: vols.filter((u) => Number(u.postulaciones) > 0).length };
+  vinculos.pct = vols.length ? (vinculos.n / vols.length) * 100 : 0;
   const finSpark = jornadas.length ? new Date(Math.max(...jornadas.map((j) => new Date(j.inicio).getTime()))) : new Date();
-  const ultimos = usuarios.slice(0, 5);
   const dbOk = salud.db === 'conectada';
   const apiOk = salud.api === 'conectada';
   const contarI = (e) => instituciones.filter((i) => i.estado_verificacion === e).length;
@@ -129,104 +155,88 @@ export default function AdminPanel({ inicial = 'resumen' }) {
   function vistaResumen() {
     return <>
       <section className="p-kpis" aria-label="Indicadores generales">
-        <Kpi icono="building" etiqueta="Instituciones" valor={resumen.instituciones_verificadas} unidad={resumen.instituciones_verificadas === 1 ? 'verificada' : 'verificadas'}
-          sub={`${plural(resumen.instituciones_pendientes, 'en proceso de validación', 'en proceso de validación')}`}
-          spark={acumulado(instituciones.map((i) => i.creado_en))} sparkEtiqueta="Instituciones registradas, acumulado de seis meses" />
-        <Kpi icono="users" etiqueta="Usuarios registrados" valor={resumen.usuarios}
-          sub={`${resumen.voluntarios} voluntariado · ${plural(resumen.representantes, 'representante', 'representantes')}`}
-          spark={acumuladoDesde(resumen.usuarios, usuarios.map((u) => u.creado_en))} sparkEtiqueta="Usuarios registrados, acumulado de seis meses" />
-        <Kpi icono="calendar" etiqueta="Jornadas en Oaxaca" valor={resumen.jornadas_publicadas} unidad={resumen.jornadas_publicadas === 1 ? 'publicada' : 'publicadas'}
-          sub={`${plural(resumen.jornadas_borrador, 'borrador', 'borradores')} · ${jornadas.length} en total`}
-          spark={porMes(jornadas.map((j) => j.inicio), 6, finSpark)} sparkEtiqueta="Jornadas por mes de inicio, últimos seis meses" />
-        <Kpi icono="follow" etiqueta="Cupo cubierto" valor={Math.round(pctCupo)} unidad="%" anillo={pctCupo}
-          sub={cupo ? `${acept} de ${cupo} lugares en jornadas publicadas` : 'Sin jornadas publicadas'} />
+        <Kpi icono="calendar" etiqueta="Jornadas activas" valor={resumen.jornadas_publicadas} unidad="en curso"
+          sub={`${jornadas.length} registradas en total`}
+          hilo={jornadas.length ? (resumen.jornadas_publicadas / jornadas.length) * 100 : 0} hiloEtiqueta="Jornadas publicadas del total registrado"
+          spark={porMes(jornadas.map((j) => j.inicio), 6, finSpark)} sparkEtiqueta="Jornadas por mes de inicio, últimos seis meses"
+          pie={<span className="p-kpi-nota">{`${publicadas.length} publicadas en ${plural(regionesActivas, 'región', 'regiones')}`}</span>} />
+        <Kpi icono="users" etiqueta="Voluntariado registrado" valor={resumen.voluntarios}
+          sub={`${resumen.usuarios} cuentas en la plataforma`}
+          spark={acumuladoDesde(resumen.usuarios, usuarios.map((u) => u.creado_en))} sparkEtiqueta="Cuentas registradas, acumulado de seis meses"
+          hilo={vinculos.ok ? vinculos.pct : undefined} hiloEtiqueta="Voluntariado que ya se postuló a una jornada"
+          pie={vinculos.ok && <span className="p-kpi-nota">{plural(vinculos.n, 'persona ya se postuló', 'personas ya se postularon')}</span>} />
+        <Kpi icono="follow" etiqueta="Lugares cubiertos" valor={acept} unidad={acept === 1 ? 'voluntario' : 'voluntarios'} anillo={pctCupo}
+          sub={cupo ? `${Math.round(pctCupo)} % del cupo de jornadas publicadas (${cupo} lugares)` : 'Sin jornadas publicadas'} />
+        <Kpi icono="building" etiqueta="Instituciones verificadas" valor={resumen.instituciones_verificadas} unidad={resumen.instituciones_verificadas === 1 ? 'activa' : 'activas'}
+          sub={resumen.instituciones_pendientes ? plural(resumen.instituciones_pendientes, 'solicitud pendiente', 'solicitudes pendientes') : 'Sin solicitudes pendientes'}
+          hilo={instituciones.length ? (resumen.instituciones_verificadas / instituciones.length) * 100 : 0} hiloEtiqueta="Instituciones verificadas del total registrado"
+          pie={<span className="p-kpi-nota">{plural(resumen.representantes, 'representante autorizado', 'representantes autorizados')}</span>} />
       </section>
 
-      <div className="p-grid">
-        <div className="p-col">
-          <Tarjeta titulo="Distribución y estado de jornadas por región (Oaxaca)" icono="map">
-            <RegionChips conteo={conteoRegion} activa={region} onElegir={setRegion} />
-            <div style={{ height: 14 }} />
-            <MapaOaxaca conteo={conteoRegion} pines={pines} activa={region} onElegir={setRegion} etiqueta="Jornadas vigentes por región de Oaxaca" />
-            <div className="p-mapa-leyenda">
-              <span><i /> Publicada</span><span><i className="ocre" /> Borrador</span><span><i className="gris" /> Inscripciones cerradas</span>
-              <span>Esquema por regiones, no a escala.</span>
-            </div>
-            <h3>{region ? 'Jornadas de la región' : 'Jornadas vigentes'}</h3>
-            {tablaJ.length === 0 ? <Vacio icono="calendar" titulo="Sin jornadas vigentes">{region ? 'Esta región no tiene jornadas vigentes.' : 'Aún no hay jornadas registradas.'}</Vacio>
-              : <div className="p-tabla-marco"><table className="p-tabla">
-                <thead><tr><th scope="col">Jornada y estado</th><th scope="col">Fecha</th><th scope="col">Por revisar</th><th scope="col">Voluntarios</th></tr></thead>
-                <tbody>{tablaJ.map((j) => <tr key={j.id}>
-                  <td className="p-celda-t"><strong>{j.titulo}</strong><small>{j.institucion} · {j.region || j.municipio}</small>
-                    <span className="p-chips"><EstadoJornada estado={j.estado} inicio={j.inicio} />{j.es_demo && <Chip tono="neutro">Demo</Chip>}</span></td>
-                  <td data-label="Fecha" className="p-num">{fechaCorta(j.inicio)}<small>{hora(j.inicio)}</small></td>
-                  <td data-label="Por revisar" className="p-num">{j.pendientes}<small>{Number(j.pendientes) === 1 ? 'pendiente' : 'pendientes'}</small></td>
-                  <td data-label="Voluntarios" className="p-num">{j.aceptadas}/{j.cupo}<small>aceptadas</small></td>
-                </tr>)}</tbody>
-              </table></div>}
-            <Link className="p-link" to="/admin?vista=jornadas">Ver todas las jornadas ({jornadas.length}) <Icon name="arrow" size={14} /></Link>
-          </Tarjeta>
-        </div>
+      <div className="p-grid p-grid--admin">
+        <Tarjeta titulo={`Avance de jornadas ${anioMx}`} icono="activity" className="p-card--grafica"
+          sub="Jornadas acumuladas por mes de inicio. El tramo punteado son jornadas ya programadas.">
+          <Filtros etiqueta="Ver por región" valor={regionG} onCambio={setRegionG}
+            opciones={[['', 'Todo Oaxaca', jornadasAnio.length], ...REGIONES.filter((r) => porRegionAnio[r.clave]).map((r) => [r.clave, r.nombre, porRegionAnio[r.clave]])]} />
+          {jornadasAnio.length === 0 ? <Vacio icono="calendar" titulo={`Sin jornadas en ${anioMx}`}>Cuando las instituciones registren jornadas, aquí verás su avance mes a mes.</Vacio>
+            : <LineaAcumulada puntos={puntosAnio} titulo={`Jornadas acumuladas en ${anioMx}${regionG ? `, ${nombreRegion(regionG)}` : ''}`} unidad="jornadas" />}
+          <p className="p-grafica-pie">
+            <span><i className="p-punto-v" aria-hidden="true" /> Voluntarios aceptados: <strong>{statsG.aceptadas}</strong></span>
+            <span>Lugares ofrecidos: <strong>{statsG.cupo}</strong></span>
+            <span>Municipios: <strong>{statsG.municipios}</strong></span>
+          </p>
+        </Tarjeta>
+
+        <Tarjeta titulo="Distribución por institución" icono="building" sub="Jornadas vigentes según la institución que las organiza.">
+          {vivas.length === 0 ? <Vacio icono="building" titulo="Sin jornadas vigentes" />
+            : <MedioAnillo partes={distribucion} titulo="Jornadas vigentes por institución" unidad={vivas.length === 1 ? 'jornada vigente' : 'jornadas vigentes'} />}
+        </Tarjeta>
+
+        <Tarjeta titulo="Últimas jornadas registradas" icono="calendar" className="p-card--tabla"
+          accion={<Link className="p-link" to="/admin?vista=jornadas">Ver todas ({jornadas.length}) <Icon name="arrow" size={14} /></Link>}>
+          {ultimasJ.length === 0 ? <Vacio icono="calendar" titulo="Aún no hay jornadas registradas" />
+            : <div className="p-tabla-marco"><table className="p-tabla p-tabla--compacta">
+              <thead><tr><th scope="col">Fecha</th><th scope="col">Comunidad y jornada</th><th scope="col">Voluntarios</th><th scope="col">Estado</th></tr></thead>
+              <tbody>{ultimasJ.map((j) => <tr key={j.id}>
+                <td data-label="Fecha" className="p-num">{fechaCorta(j.inicio)}<small>{hora(j.inicio)}</small></td>
+                <td className="p-celda-t"><strong>{j.municipio}</strong><small className="p-recorte">{j.titulo}</small><small>{j.institucion}{j.es_demo ? ' · demostración' : ''}</small></td>
+                <td data-label="Voluntarios" className="p-num">{j.aceptadas}/{j.cupo}<small>aceptados</small></td>
+                <td data-label="Estado"><EstadoJornada estado={j.estado} inicio={j.inicio} /></td>
+              </tr>)}</tbody>
+            </table></div>}
+        </Tarjeta>
 
         <div className="p-col">
-          <Tarjeta titulo="Validaciones pendientes" icono="shield" sub="Instituciones y representantes que esperan revisión.">
-            {nSolicitudes === 0 ? <Vacio icono="check" titulo="Todo al día">No hay instituciones ni representantes por revisar.</Vacio>
-              : <ul className="p-lista">
-                {pendientesInst.slice(0, 4).map((i) => <li key={`i-${i.id}`}>
-                  <span className="p-icono-t"><Icon name="building" size={18} /></span>
-                  <span className="p-lista-txt"><strong>{i.nombre}</strong><small>Solicitud de registro institucional · {haceCuanto(i.creado_en)}</small></span>
-                  <span className="p-lista-acc"><Link className="btn btn-outline btn-sm" to="/admin?vista=solicitudes">Revisar</Link></span>
+          <Tarjeta titulo="Validaciones y solicitudes" icono="shield">
+            {nSolicitudes === 0 && !resumen.sin_verificar && !resumen.bloqueados ? <Vacio icono="check" titulo="Todo al día">No hay instituciones, representantes ni cuentas por revisar.</Vacio>
+              : <ul className="p-lista p-lista--validar">
+                {pendientesInst.slice(0, 3).map((i, n) => <li key={`i-${i.id}`}>
+                  <span className="p-lista-txt"><strong>{i.nombre}</strong><small>Registro institucional · {haceCuanto(i.creado_en)}</small></span>
+                  <span className="p-lista-acc"><Link className={`btn btn-sm ${n === 0 ? 'btn-primary' : 'btn-outline'}`} to="/admin?vista=solicitudes">{n === 0 ? 'Validar' : 'Revisar'}<span className="sr-only">: {i.nombre}</span></Link></span>
                 </li>)}
-                {pendientesRep.slice(0, 3).map((p) => <li key={`r-${p.inst.id}-${p.id}`}>
-                  <span className="p-icono-t p-icono-t--ocre"><Icon name="users" size={18} /></span>
+                {pendientesRep.slice(0, 2).map((p) => <li key={`r-${p.inst.id}-${p.id}`}>
                   <span className="p-lista-txt"><strong>{p.nombre}</strong><small>Quiere representar a {p.inst.nombre}</small></span>
-                  <span className="p-lista-acc"><Link className="btn btn-outline btn-sm" to="/admin?vista=solicitudes">Revisar</Link></span>
+                  <span className="p-lista-acc"><Link className={`btn btn-sm ${pendientesInst.length === 0 ? 'btn-primary' : 'btn-outline'}`} to="/admin?vista=solicitudes">Autorizar<span className="sr-only">: {p.nombre}</span></Link></span>
                 </li>)}
+                {(resumen.sin_verificar > 0 || resumen.bloqueados > 0) && <li>
+                  <span className="p-lista-txt"><strong>{[resumen.sin_verificar && plural(resumen.sin_verificar, 'cuenta sin verificar', 'cuentas sin verificar'), resumen.bloqueados && plural(resumen.bloqueados, 'bloqueada', 'bloqueadas')].filter(Boolean).join(' · ')}</strong><small>Cuentas que requieren atención</small></span>
+                  <span className="p-lista-acc"><Link className="btn btn-outline btn-sm" to="/admin?vista=usuarios">Gestionar</Link></span>
+                </li>}
               </ul>}
+            {nSolicitudes > 5 && <Link className="p-link" to="/admin?vista=solicitudes">Ver las {nSolicitudes} solicitudes <Icon name="arrow" size={14} /></Link>}
           </Tarjeta>
 
-          <Tarjeta titulo="Estado de la plataforma" icono="activity"
-            accion={<button type="button" className="p-link" onClick={comprobar} disabled={salud.cargando}><Icon name="refresh" size={15} /> {salud.cargando ? 'Comprobando…' : 'Volver a comprobar'}</button>}>
-            <ul className="p-lista">
-              <li><span className="p-icono-t"><Icon name="database" size={18} /></span><span className="p-lista-txt"><strong>Base de datos</strong><small>PostgreSQL</small></span>
-                <span className="p-estado-val">{dbOk ? 'Conectada' : salud.db === 'sin_configurar' ? 'Sin configurar' : 'Sin conexión'}</span><i className={`p-semaforo${dbOk ? '' : ' p-semaforo--alerta'}`} aria-hidden="true" /></li>
-              <li><span className="p-icono-t"><Icon name="activity" size={18} /></span><span className="p-lista-txt"><strong>API de Nexo Ñuu</strong><small>{salud.ms != null ? `Respondió en ${salud.ms} ms` : 'Sin respuesta'}</small></span>
-                <span className="p-estado-val">{apiOk ? 'Activa' : 'No disponible'}</span><i className={`p-semaforo${apiOk ? '' : ' p-semaforo--alerta'}`} aria-hidden="true" /></li>
-              <li><span className="p-icono-t"><Icon name="mail" size={18} /></span><span className="p-lista-txt"><strong>Correo</strong><small>Verificación y avisos</small></span>
-                <span className="p-estado-val">{!prov ? '—' : prov.correo === 'bandeja' ? 'Llega a la bandeja' : 'Solo en la terminal'}</span><i className={`p-semaforo${prov?.correo === 'bandeja' ? '' : ' p-semaforo--aviso'}`} aria-hidden="true" /></li>
-              <li><span className="p-icono-t"><Icon name="globe" size={18} /></span><span className="p-lista-txt"><strong>Acceso con Google</strong><small>Inicio de sesión</small></span>
-                <span className="p-estado-val">{!prov ? '—' : prov.google ? 'Activo' : 'Sin configurar'}</span><i className={`p-semaforo${prov?.google ? '' : ' p-semaforo--aviso'}`} aria-hidden="true" /></li>
+          <Tarjeta titulo="Infraestructura y datos del sistema" icono="database"
+            accion={<button type="button" className="p-link" onClick={comprobar} disabled={salud.cargando}><Icon name="refresh" size={15} /> {salud.cargando ? 'Comprobando…' : 'Comprobar'}</button>}>
+            <ul className="p-infra">
+              <li><i className={`p-semaforo${dbOk ? '' : ' p-semaforo--alerta'}`} aria-hidden="true" /><span>Base de datos: <strong>PostgreSQL {dbOk ? 'conectada' : salud.db === 'sin_configurar' ? 'sin configurar' : 'sin conexión'}</strong></span></li>
+              <li><i className={`p-semaforo${apiOk ? '' : ' p-semaforo--alerta'}`} aria-hidden="true" /><span>API Nexo Ñuu: <strong>{apiOk ? 'activa' : 'no disponible'}</strong>{salud.ms != null ? ` · respondió en ${salud.ms} ms` : ''}</span></li>
+              <li><i className={`p-semaforo${prov?.correo === 'bandeja' ? '' : ' p-semaforo--aviso'}`} aria-hidden="true" /><span>Correo: <strong>{!prov ? '—' : prov.correo === 'bandeja' ? 'llega a la bandeja' : 'solo en la terminal'}</strong></span></li>
+              <li><i className={`p-semaforo${prov?.google ? '' : ' p-semaforo--aviso'}`} aria-hidden="true" /><span>Acceso con Google: <strong>{!prov ? '—' : prov.google ? 'activo' : 'sin configurar'}</strong></span></li>
             </ul>
             {salud.cuando && <p className="p-nota">Comprobado a las {salud.cuando.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}.</p>}
           </Tarjeta>
         </div>
-      </div>
-
-      <h2 className="p-seccion-t">Actividad y cuentas</h2>
-      <div className="p-tres">
-        <Tarjeta titulo="Últimos usuarios registrados" icono="users" accion={<Link className="p-link" to="/admin?vista=usuarios">Ver todos <Icon name="arrow" size={14} /></Link>}>
-          <div className="p-avatares" aria-hidden="true">{ultimos.map((u) => <Avatar key={u.id} nombre={u.nombre} size={34} />)}</div>
-          <ul className="p-lista">{ultimos.slice(0, 4).map((u) => <li key={u.id}>
-            <span className="p-lista-txt"><strong>{u.nombre}</strong><small>Alta {fechaMedia(u.creado_en)}</small></span>
-            <span className="p-chips">{u.roles.slice(0, 2).map((r) => <Chip key={r} tono={ROLES[r]?.[1] || 'neutro'}>{ROLES[r]?.[0] || r}</Chip>)}</span>
-          </li>)}</ul>
-        </Tarjeta>
-        <Tarjeta titulo="Postulaciones" icono="inbox">
-          <div className="p-mini">
-            <div className={resumen.postulaciones_pendientes ? 'is-alerta' : ''}><strong data-count={resumen.postulaciones_pendientes}>{resumen.postulaciones_pendientes}</strong><span>Pendientes de decisión</span></div>
-            <div><strong data-count={resumen.postulaciones_aceptadas}>{resumen.postulaciones_aceptadas}</strong><span>Aceptadas</span></div>
-            <div><strong>{resumen.jornadas_borrador}</strong><span>Jornadas en borrador</span></div>
-            <div><strong>{resumen.administradores}</strong><span>Cuentas administradoras</span></div>
-          </div>
-          <p className="p-nota">Las decisiones las toma cada institución; la administración solo modera.</p>
-        </Tarjeta>
-        <Tarjeta titulo="Cuentas que requieren atención" icono="info" accion={<Link className="p-link" to="/admin?vista=usuarios">Revisar <Icon name="arrow" size={14} /></Link>}>
-          <div className="p-mini">
-            <div className={resumen.sin_verificar ? 'is-alerta' : ''}><strong>{resumen.sin_verificar}</strong><span>Sin verificar su correo</span></div>
-            <div className={resumen.bloqueados ? 'is-alerta' : ''}><strong>{resumen.bloqueados}</strong><span>Bloqueadas</span></div>
-          </div>
-          <p className="p-nota">{resumen.sin_verificar || resumen.bloqueados ? 'Revisa estas cuentas en Usuarios.' : 'No hay cuentas con incidencias.'}</p>
-        </Tarjeta>
       </div>
     </>;
   }
@@ -390,10 +400,12 @@ export default function AdminPanel({ inicial = 'resumen' }) {
   const vistaActual = { resumen: vistaResumen, solicitudes: vistaSolicitudes, instituciones: vistaInstituciones, usuarios: vistaUsuarios, jornadas: vistaJornadas }[vista];
 
   return <PanelLayout rol="admin" nav={nav} identidad={identidad}
-    titulo={`Hola, ${primerNombre(user?.nombre)}`} migas={['Administración', VISTAS[vista]]}
+    titulo={`Hola, ${user?.nombre || ''}`} migas={['Administración', VISTAS[vista]]}
+    subtitulo={vista === 'resumen' ? `Administración general · Servidor: ${salud.cargando && !salud.cuando ? 'comprobando…' : apiOk && dbOk ? 'todo en línea' : 'revisa el estado'}` : undefined}
+    cifras={resumen ? [{ etiqueta: 'Voluntariado', valor: resumen.voluntarios }, { etiqueta: 'Aceptados', valor: resumen.postulaciones_aceptadas }] : undefined}
     buscar={{ placeholder: 'Buscar usuarios…', onSubmit: (texto) => ir('usuarios', { buscar: texto }) }}
     avisos={{ n: nSolicitudes, to: '/admin?vista=solicitudes', label: nSolicitudes ? `${nSolicitudes} solicitudes por revisar` : 'Sin solicitudes pendientes' }}
-    estado={estadoServidor}>
+    estado={vista === 'resumen' ? undefined : estadoServidor}>
     <div ref={ref}>
       {vista === 'resumen' && <h1 className="sr-only">Panel de administración · Resumen global</h1>}
       {cargando ? <p className="p-cargando" role="status">Consultando información…</p>

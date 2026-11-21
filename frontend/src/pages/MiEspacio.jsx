@@ -3,11 +3,11 @@ import { Link, useOutletContext } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { phoneStatus, getVolunteerProfile, getVolunteerCatalogs, getJornadasConFiltros } from '../api.js';
 import { Icon } from '../components/Icons.jsx';
-import MapaOaxaca, { claveRegion } from '../components/panel/MapaOaxaca.jsx';
+import { claveRegion } from '../components/panel/MapaOaxaca.jsx';
+import MapaAlfabetizacion from '../components/panel/MapaAlfabetizacion.jsx';
 import { entradaPanel } from '../components/panel/PanelLayout.jsx';
 import { Kpi, Tarjeta, Chip, EstadoPostulacion, Vacio, diaCorto, fechaCorta, fechaHora, hora, plural } from '../components/panel/piezas.jsx';
 import { useMotion } from '../motion/useMotion.js';
-import { REGIONES } from '../data/fuentes.js';
 
 const ZONA = 'America/Mexico_City';
 const DISP = { entre_semana: 'Entre semana', fin_semana: 'Fines de semana', variable: 'Variable' };
@@ -24,8 +24,6 @@ export default function MiEspacio() {
   const [tel, setTel] = useState({ cargando: true, dato: null, error: '' });
   const [perfil, setPerfil] = useState({ cargando: esVoluntario, creado: false, dato: null, cat: null, error: '' });
   const [pub, setPub] = useState({ cargando: true, lista: [], error: '' });
-  const [vista, setVista] = useState('mapa');
-  const [region, setRegion] = useState('');
   const ref = useRef(null);
 
   useEffect(() => {
@@ -75,12 +73,8 @@ export default function MiEspacio() {
   const pct = Math.round((hechos / checks.length) * 100);
 
   const misIds = new Set(filas.map((p) => String(p.jornadaId)));
-  const activasIds = new Set(activas.map((p) => String(p.jornadaId)));
   const conteo = {};
   pub.lista.forEach((j) => { const k = claveRegion(j.region || ''); if (k) conteo[k] = (conteo[k] || 0) + 1; });
-  const pines = pub.lista.map((j) => ({ id: j.id, clave: claveRegion(j.region || ''), tono: activasIds.has(String(j.id)) ? 'ocre' : 'verde' }));
-  const enRegion = region ? pub.lista.filter((j) => claveRegion(j.region || '') === region) : [];
-  const nombreRegion = REGIONES.find((r) => r.clave === region)?.nombre;
   const recos = pub.lista
     .filter((j) => !misIds.has(String(j.id)))
     .sort((a, b) => Number(claveRegion(b.region || '') === miRegion && Boolean(miRegion)) - Number(claveRegion(a.region || '') === miRegion && Boolean(miRegion))
@@ -113,29 +107,9 @@ export default function MiEspacio() {
 
     <div className="p-grid">
       <div className="p-col">
-        <Tarjeta titulo="Mapa de oportunidades · Oaxaca" icono="map" sub="Jornadas vigentes por región. Toca una región para ver cuáles son."
-          accion={<div className="p-toggle" role="group" aria-label="Forma de ver las regiones">
-            <button type="button" aria-pressed={vista === 'mapa'} onClick={() => setVista('mapa')}><Icon name="map" size={15} /> Mapa</button>
-            <button type="button" aria-pressed={vista === 'lista'} onClick={() => setVista('lista')}><Icon name="list" size={15} /> Lista</button>
-          </div>}>
-          {pub.error ? <p className="p-msg p-msg--error" role="alert"><Icon name="info" size={17} />No se pudieron consultar las jornadas: {pub.error}</p>
-            : pub.cargando ? <p className="p-cargando" role="status">Consultando jornadas…</p>
-            : vista === 'mapa' ? <>
-              <MapaOaxaca conteo={conteo} pines={pines} activa={region} onElegir={setRegion} etiqueta="Jornadas vigentes por región de Oaxaca"
-                detalle={region && <>
-                  <strong><Icon name="pin" size={15} /> {nombreRegion}</strong>
-                  {enRegion.length ? <ul>{enRegion.slice(0, 3).map((j) => <li key={j.id}>
-                    <Link to={`/jornadas/${j.id}`}>{j.titulo}</Link><br /><small>{j.comunidad} · {fechaCorta(j.inicio)}</small>
-                  </li>)}</ul> : <p style={{ margin: '4px 0 0' }}>Sin jornadas vigentes en esta región por ahora.</p>}
-                  {enRegion.length > 3 && <Link className="p-link" to={`/jornadas?region=${encodeURIComponent(enRegion[0].region)}`}>Ver las {enRegion.length} <Icon name="arrow" size={14} /></Link>}
-                </>} />
-              <div className="p-mapa-leyenda">
-                <span><i /> Jornada vigente</span>
-                {esVoluntario && <span><i className="ocre" /> Te postulaste</span>}
-                <span><i className="zona" /> Color más intenso, más jornadas</span>
-              </div>
-              <p className="p-nota">Esquema por regiones, no a escala.</p>
-            </> : <ul className="p-regiones-lista">{REGIONES.map((r) => <li key={r.clave}><span>{r.nombre}</span><strong>{conteo[r.clave] || 0}</strong></li>)}</ul>}
+        <Tarjeta titulo="Mapa de alfabetización · Oaxaca" icono="map" sub="Plazas comunitarias, coordinaciones de zona y la sede central del IEEA. Toca un rombo para ver la dirección.">
+          <MapaAlfabetizacion jornadasPorRegion={conteo} />
+          {pub.error && <p className="p-msg p-msg--error" role="alert"><Icon name="info" size={17} />No se pudieron consultar las jornadas: {pub.error}</p>}
 
           {esVoluntario && <>
             <h3>Mis jornadas en curso</h3>

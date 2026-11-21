@@ -4,6 +4,73 @@ Rediseño completo del sitio público (Inicio, Jornadas, Detalle, Voluntariado, 
 
 ---
 
+## Incremento 10: panel central de administración y mapa real de alfabetización
+
+No se tocó el backend ni la base de datos. Cambian dos vistas:
+
+### 1. Panel central de administración (`/admin`)
+
+Toma la estructura del diseño de referencia; todos los números salen de la API y ninguno se inventa:
+
+| Bloque | Qué muestra | De dónde sale |
+|---|---|---|
+| Barra superior | Saludo, estado del servidor, búsqueda, cifras de voluntariado y voluntarios aceptados, avisos y fecha | `/api/admin/resumen` y `/api/health` |
+| Menú lateral | Panel central, Instituciones verificadas (N activas), Gestión de jornadas (N en curso), Usuarios y voluntariado (N cuentas), Validaciones (con número pendiente) | `/api/admin/resumen` |
+| Jornadas activas | Publicadas, total, barra de publicadas del total, tendencia de seis meses | `/api/admin/jornadas` |
+| Voluntariado registrado | Cuentas con rol voluntariado; barra de quienes ya se postularon (se oculta si hay más de 200 cuentas, porque la API devuelve solo las 200 más recientes) | `/api/admin/usuarios` |
+| Lugares cubiertos | Voluntarios aceptados y porcentaje del cupo de jornadas publicadas | `/api/admin/jornadas` |
+| Instituciones verificadas | Verificadas, pendientes y representantes autorizados | `/api/admin/resumen` |
+| Avance de jornadas del año | Línea acumulada por mes de inicio, con pestañas por región; los meses que aún no llegan van punteados (jornadas ya programadas) | `/api/admin/jornadas` |
+| Distribución por institución | Medio anillo de jornadas vigentes por institución (las 3 con más jornadas y "Otras") | `/api/admin/jornadas` |
+| Últimas jornadas registradas | Las 5 de alta más reciente (id más alto) | `/api/admin/jornadas` |
+| Validaciones y solicitudes | Instituciones y representantes por revisar, y cuentas sin verificar o bloqueadas | `/api/admin/instituciones` y resumen |
+| Infraestructura y datos del sistema | PostgreSQL, API (tiempo de respuesta medido en tu navegador), correo y Google | `/api/health` y `/api/auth/proveedores` |
+
+**Diferencias con la referencia, a propósito:** la referencia muestra "Personas en alfabetización" y una meta del 85 %, pero la plataforma no registra educandos ni metas, así que esa tarjeta muestra **lugares cubiertos** con datos reales. Tampoco hay menú de "Repositorio", "Estadísticas" ni "Configuración", porque esas secciones no existen todavía.
+
+**Colores de las gráficas** (validados para daltonismo con el validador de la guía de visualización): `#1d8a73` verde, `#e3a23c` ocre, `#c45f3c` terracota y `#5a78c4` azul; "Otras" en gris `#9aa7a2`. El ocre tiene poco contraste sobre blanco, por eso la leyenda siempre lleva el nombre y el porcentaje escritos.
+
+### 2. Mapa de alfabetización en Mi espacio (`/mi-espacio`)
+
+El mapa esquemático se cambió por un **mapa real de Oaxaca** con 50 sedes públicas de alfabetización. Se puede acercar, mover, filtrar por tipo y región, y ver la ficha de cada sede con su dirección y un enlace "Cómo llegar". También hay vista de lista, que es la alternativa accesible.
+
+| Tipo | Cuántas | Fuente |
+|---|---|---|
+| Sede central del IEEA (Heroica Escuela Naval Militar 701, Reforma, Oaxaca de Juárez; tel. 951 502 1490) | 1 | [Portal oficial del IEEA Oaxaca](https://www.oaxaca.gob.mx/ieea/), consultado el 21 nov 2026 |
+| Coordinaciones de zona del IEEA | 11 | [INEA, Puntos de difusión e incorporación, 1a Jornada 2026, Oaxaca](http://www.inea.gob.mx/sedes_aplicacion/2026/abril/PUNTOS_DE_DIFUSION_1a_JORNADA_2026_OAXACA_17042026.pdf) (17 abr 2026) |
+| Plazas comunitarias | 39 (una sin ubicación: solo aparece en la lista) | La misma lista del INEA |
+
+- De la lista del INEA se tomaron **solo las sedes permanentes**: coordinaciones de zona y plazas comunitarias. Se dejaron fuera los puntos temporales de la jornada (palacios y corredores municipales) y **los nombres y teléfonos de las personas responsables**, porque son datos personales.
+- Las coordenadas se buscaron en OpenStreetMap (Nominatim) y son **aproximadas al centro de cada localidad**. La sede central está a nivel calle. Cada ficha lo dice.
+- Datos en `frontend/src/data/alfabetizacion-oaxaca.js`. Para agregar o corregir una sede, edita su objeto y cambia `CONSULTA_ALFA`.
+- El mapa usa **Leaflet 1.9.4** (librería de mapas, versión fija) con el mapa base de **OpenStreetMap**. Leaflet se descarga solo al abrir Mi espacio, no en las demás páginas.
+
+### Publicar en el VPS (esta vez son dos comandos)
+
+1. Actualizar el sitio:
+
+   ```powershell
+   ssh root@179.66.153.232 "cd /var/www/nexo-nuu && git fetch origin feat/demo-publica && git reset --hard origin/feat/demo-publica && cd frontend && npm ci && npm run build"
+   ```
+
+2. Permitir las imágenes del mapa. La política de seguridad de nginx (CSP: la lista de sitios de los que la página puede cargar cosas) hoy solo deja cargar imágenes del propio sitio. Este comando agrega OpenStreetMap; si lo corres dos veces no pasa nada:
+
+   ```powershell
+   ssh root@179.66.153.232 "sed -i 's#data:; style-src#data: https://tile.openstreetmap.org; style-src#' /etc/nginx/sites-available/nexo-nuu && nginx -t && systemctl reload nginx"
+   ```
+
+   `deploy/instalar-vps.sh` ya trae este cambio para instalaciones nuevas.
+
+### Por validar (decisiones que tomé por ti)
+
+1. **Mapa base de OpenStreetMap.** Es gratuito y no pide cuenta, pero cada vez que alguien abre el mapa, su navegador pide las imágenes a los servidores de OpenStreetMap, que ven su dirección IP. Para una demo está bien. Si el tráfico crece, conviene un proveedor de mapas con contrato (sus reglas piden no abusar del servicio gratuito).
+2. **Solo sedes del IEEA y del INEA.** No encontré en fuentes oficiales un directorio con ubicaciones de asociaciones civiles de alfabetización en Oaxaca. Afodepo aparece como aliada de la Estrategia Nacional, pero sin dirección pública, así que no la puse en el mapa.
+3. **Ubicaciones aproximadas.** Son el centro de cada localidad, no la puerta de la sede. Convendría confirmarlas con el IEEA.
+4. **La lista del INEA es de abril de 2026.** Algunas plazas pueden haber cambiado de domicilio. El directorio mensual completo del INEA está en datos.gob.mx ("Plazas comunitarias en operación", CC BY 4.0), pero su servidor bloquea la descarga automática. Si lo bajas desde el navegador, puedo sumar todas las plazas del estado.
+5. **Lugares cubiertos en lugar de "Personas en alfabetización".** Si más adelante se registran educandos y metas, esa tarjeta puede mostrar el dato de la referencia.
+
+---
+
 ## Incremento 9: paneles con menú lateral (voluntariado, institución y administración)
 
 Solo cambió el diseño: **no se tocó el backend ni la base de datos** y cada botón usa las mismas rutas de la API que antes. Las tres áreas privadas ahora son paneles con menú lateral, sin la cabecera ni el pie del sitio público.

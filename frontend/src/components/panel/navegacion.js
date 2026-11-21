@@ -34,11 +34,11 @@ export function navInstitucion({ vista = null, publicadas = 0, pendientes = 0 } 
 export function navAdmin({ vista = null, resumen = null, solicitudes = 0 } = {}) {
   const cuenta = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
   return [
-    { to: '/admin', label: 'Resumen global', icon: 'grid', activo: vista === 'resumen' },
-    { to: '/admin?vista=solicitudes', label: 'Solicitudes', icon: 'flag', activo: vista === 'solicitudes', badge: solicitudes ? String(solicitudes) : null, badgeSr: `${solicitudes} pendientes`, tono: 'alerta' },
-    { to: '/admin?vista=instituciones', label: 'Instituciones', icon: 'building', activo: vista === 'instituciones', badge: resumen ? String(resumen.instituciones_verificadas) : null, badgeSr: resumen ? cuenta(resumen.instituciones_verificadas, 'verificada', 'verificadas') : '' },
-    { to: '/admin?vista=usuarios', label: 'Usuarios', icon: 'users', activo: vista === 'usuarios', badge: resumen ? String(resumen.usuarios) : null, badgeSr: resumen ? cuenta(resumen.usuarios, 'cuenta', 'cuentas') : '' },
-    { to: '/admin?vista=jornadas', label: 'Jornadas', icon: 'calendar', activo: vista === 'jornadas', badge: resumen ? `${resumen.jornadas_publicadas} publicadas` : null },
+    { to: '/admin', label: 'Panel central', icon: 'grid', activo: vista === 'resumen' },
+    { to: '/admin?vista=instituciones', label: 'Instituciones verificadas', icon: 'building', activo: vista === 'instituciones', sub: resumen ? cuenta(resumen.instituciones_verificadas, 'activa', 'activas') : null },
+    { to: '/admin?vista=jornadas', label: 'Gestión de jornadas', icon: 'calendar', activo: vista === 'jornadas', sub: resumen ? `${resumen.jornadas_publicadas} en curso` : null },
+    { to: '/admin?vista=usuarios', label: 'Usuarios y voluntariado', icon: 'users', activo: vista === 'usuarios', sub: resumen ? cuenta(resumen.usuarios, 'cuenta registrada', 'cuentas registradas') : null },
+    { to: '/admin?vista=solicitudes', label: 'Validaciones', icon: 'flag', activo: vista === 'solicitudes', sub: 'Instituciones y representantes', badge: solicitudes ? String(solicitudes) : null, badgeSr: `${solicitudes} pendientes`, tono: 'alerta' },
     SEGURIDAD,
     PUBLICAS,
   ];

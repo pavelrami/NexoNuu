@@ -24,9 +24,9 @@ function Item({ item, contraido }) {
   const activo = item.activo ?? (item.end ? pathname === item.to : pathname.startsWith(item.to));
   return <li>
     <Link to={item.to} className={`p-nav-link${activo ? ' is-activo' : ''}`} aria-current={activo ? 'page' : undefined}
-      title={contraido ? `${item.label}${item.badge ? ` · ${item.badgeSr || item.badge}` : ''}` : (item.badgeSr ? `${item.label} · ${item.badgeSr}` : undefined)}>
+      title={contraido ? `${item.label}${item.sub ? ` · ${item.sub}` : ''}${item.badge ? ` · ${item.badgeSr || item.badge}` : ''}` : (item.badgeSr ? `${item.label} · ${item.badgeSr}` : undefined)}>
       <span className="p-nav-icono"><Icon name={item.icon} size={19} /></span>
-      <span className="p-nav-txt">{item.label}</span>
+      <span className="p-nav-txt">{item.label}{item.sub && <small className="p-nav-sub">{item.sub}</small>}</span>
       {item.badge && <span className={`p-nav-badge p-nav-badge--${item.tono || 'suave'}`} aria-hidden={item.badgeSr ? true : undefined}>{item.badge}</span>}
       {item.badge && item.badgeSr && <span className="sr-only">: {item.badgeSr}</span>}
       {item.externo && <Icon name="arrowUpRight" size={14} className="p-nav-ext" />}
@@ -34,7 +34,7 @@ function Item({ item, contraido }) {
   </li>;
 }
 
-export default function PanelLayout({ rol, nav = [], identidad, titulo, migas = [], buscar, avisos, estado, children }) {
+export default function PanelLayout({ rol, nav = [], identidad, titulo, subtitulo, migas = [], buscar, avisos, estado, cifras, children }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -159,11 +159,13 @@ export default function PanelLayout({ rol, nav = [], identidad, titulo, migas = 
           aria-controls="panel-menu" onClick={() => setAbierto(true)}><Icon name="menu" size={22} /></button>
         <div className="p-top-titulo">
           {titulo && <p className="p-top-h">{titulo}</p>}
-          {migas.length > 0 && <nav aria-label="Ubicación" className="p-migas"><ol>
+          {subtitulo && <p className="p-top-sub">{subtitulo}</p>}
+          {!subtitulo && migas.length > 0 && <nav aria-label="Ubicación" className="p-migas"><ol>
             {migas.map((m, i) => <li key={`${i}-${m}`} aria-current={i === migas.length - 1 ? 'page' : undefined}>{m}</li>)}
           </ol></nav>}
         </div>
         {formBuscar(false)}
+        {cifras?.length > 0 && <dl className="p-top-cifras">{cifras.map((c) => <div key={c.etiqueta}><dt>{c.etiqueta}</dt><dd>{c.valor.toLocaleString('es-MX')}</dd></div>)}</dl>}
         <div className="p-top-acciones">
           {estado}
           {avisos && <Link to={avisos.to} className="p-top-aviso" aria-label={avisos.label}>
