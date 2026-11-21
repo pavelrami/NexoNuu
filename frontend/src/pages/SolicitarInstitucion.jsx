@@ -47,7 +47,7 @@ export default function SolicitarInstitucion() {
         <p className="inst-muted">Utiliza los datos reales de la organización únicamente si tienes autorización para representarla. Para pruebas, emplea una institución claramente ficticia.</p>
         {success && <p className="auth-success" role="status">{success}</p>}
         {error && <p className="auth-error" role="alert">{error}</p>}
-        {loading ? <p role="status">Consultando solicitudes...</p> : !canSubmit ? <div className="notice"><strong>No puedes presentar una nueva solicitud ahora.</strong><p>Consulta el estado de la solicitud existente. La revisión administrativa no está implementada aún.</p></div> : <form className="inst-form" onSubmit={enviar}>
+        {loading ? <p role="status">Consultando solicitudes...</p> : !canSubmit ? <div className="notice"><strong>No puedes presentar una nueva solicitud ahora.</strong><p>Consulta el estado de la solicitud existente. Una persona administradora la revisará y aquí verás su estado.</p></div> : <form className="inst-form" onSubmit={enviar}>
           <label htmlFor="inst-nombre">Nombre oficial de la institución *</label>
           <input id="inst-nombre" value={form.nombre} onChange={e=>setValue('nombre',e.target.value)} required minLength={5} maxLength={200} placeholder="Ej. Centro Comunitario DEMO" autoComplete="organization"/>
           <label htmlFor="inst-tipo">Tipo de organización (opcional)</label>
@@ -79,7 +79,6 @@ export default function SolicitarInstitucion() {
         <div className="inst-steps">
           <strong>¿Qué ocurrirá después?</strong>
           <p>1. Se registra tu solicitud.</p><p>2. Un administrador revisará la institución.</p><p>3. La representación necesitará aprobación por separado.</p>
-          <p className="inst-muted">Las etapas 2 y 3 se implementarán en el siguiente incremento.</p>
         </div>
         <Link className="btn btn-outline" to="/mi-espacio">Volver a Mi espacio</Link>
       </aside>

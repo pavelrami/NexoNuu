@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import '../perfil-voluntario.css';
 import { Link } from 'react-router-dom';
 import { getVolunteerCatalogs, getVolunteerProfile, saveVolunteerProfile } from '../api.js';
+import { PanelCabeza } from '../components/panel/piezas.jsx';
 
 const EMPTY_PROFILE = {
   comunidadId: '', disponibilidad: 'variable', biografia: '', habilidades: [], lenguas: []
@@ -91,13 +92,13 @@ export default function PerfilVoluntario() {
     }
   };
 
-  if (loading) return <section className="container inner-page"><p role="status">Cargando tu perfil de voluntariado...</p></section>;
+  if (loading) return <p className="p-cargando" role="status">Cargando tu perfil de voluntariado…</p>;
 
-  return <section className="container inner-page">
-    <span className="section-kicker">Módulo Conectar · Nexo Ñuu</span>
-    <h1>Mi perfil de voluntariado</h1>
-    <p className="page-intro">Comparte únicamente la información con la que deseas colaborar. Los datos de tu perfil no se mostrarán públicamente y las lenguas son autodeclaradas, no una certificación.</p>
-    <Link to="/mi-espacio" className="btn btn-outline" style={{ marginBottom: 24 }}>Volver a Mi espacio</Link>
+  return <div>
+    <PanelCabeza kicker="Conectar · Mi perfil" titulo="Mi perfil de voluntariado"
+      acciones={<Link to="/mi-espacio" className="btn btn-outline">Volver al inicio</Link>}>
+      Comparte únicamente la información con la que deseas colaborar. Tu perfil no se muestra públicamente: solo lo ve la institución de la jornada a la que te postulas. Las lenguas son autodeclaradas, no una certificación.
+    </PanelCabeza>
 
     {error && <p className="auth-error" role="alert">{error}</p>}
     <form className="volunteer-form" onSubmit={submit}>
@@ -186,5 +187,5 @@ export default function PerfilVoluntario() {
         {message && <p className="auth-success" role="status">{message}</p>}
       </div>
     </form>
-  </section>;
+  </div>;
 }

@@ -13,7 +13,7 @@ function formFrom(j) {
 }
 const actions = { cerrar: 'Cerrar inscripciones', cancelar: 'Cancelar jornada', finalizar: 'Finalizar jornada' };
 
-export default function JornadaGestion({ jornada, institucionId, comunidades, onUpdated, onError, onSuccess }) {
+export default function JornadaGestion({ jornada, institucionId, comunidades, onUpdated, onError, onSuccess, abiertoInicial = false }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(() => formFrom(jornada));
   const [selectedAction, setSelectedAction] = useState('');
@@ -21,7 +21,7 @@ export default function JornadaGestion({ jornada, institucionId, comunidades, on
   const [busy, setBusy] = useState(false);
   const [history, setHistory] = useState(null);
   const [showHistory, setShowHistory] = useState(false);
-  const [abierto, setAbierto] = useState(false);
+  const [abierto, setAbierto] = useState(abiertoInicial);
   if (!jornada.gestionable) return null;
   const pending = Number(jornada.pendientes || 0), accepted = Number(jornada.aceptadas || 0);
   const options = [];

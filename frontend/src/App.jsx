@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef } from 'react';
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
 import Header from './components/Header.jsx';
 import Footer from './components/Footer.jsx';
 import Home from './pages/Home.jsx';
@@ -20,31 +20,32 @@ import PerfilVoluntario from './pages/PerfilVoluntario.jsx';
 import VerificarTelefono from './pages/VerificarTelefono.jsx';
 import OlvideContrasena from './pages/OlvideContrasena.jsx';
 import RestablecerContrasena from './pages/RestablecerContrasena.jsx';
+import VoluntarioShell from './components/panel/VoluntarioShell.jsx';
+import { PanelEspera } from './components/panel/PanelLayout.jsx';
 import { useAuth } from './context/AuthContext.jsx';
-import { gsap, M, RM, initLenis, requestRefresh, safe, scrollToTop, watchLayout } from './motion/motion.js';
-import { useMotion } from './motion/useMotion.js';
+import { gsap, RM, initLenis, requestRefresh, safe, scrollToTop, watchLayout } from './motion/motion.js';
+import './panel.css';
+
+// Rutas privadas que se muestran como panel (menú lateral, sin la cabecera pública).
+const PANEL = ['/mi-espacio', '/mis-postulaciones', '/mi-perfil-voluntario', '/verificar-telefono', '/instituciones/solicitar', '/panel-institucional', '/admin'];
+const esPanel = (p) => PANEL.some((r) => p === r || p.startsWith(`${r}/`));
 
 function Private({ children }) {
   const { user, loading } = useAuth();
-  if (loading) return <section className="container inner-page"><p role="status">Comprobando sesión…</p></section>;
-  return user ? children : <Navigate to="/iniciar-sesion" replace/>;
+  if (loading) return <PanelEspera />;
+  return user ? children : <Navigate to="/iniciar-sesion" replace />;
 }
 
-function AdminOnly({children}) {
-  const {user,loading}=useAuth();
-  if(loading)return <section className="container inner-page"><p role="status">Comprobando permisos…</p></section>;
-  if(!user)return <Navigate to="/iniciar-sesion" replace/>;
-  return user.roles?.includes('administrador') ? children : <section className="container inner-page"><h1>Acceso restringido</h1><p>Esta página requiere una cuenta administradora autorizada.</p></section>;
-}
-
-// Las páginas privadas y de gestión entran con un revelado discreto por bloques.
-function Suave({ children }) {
-  const ref = useRef(null);
-  useMotion(ref, ({ root }) => {
-    const bloques = root.querySelectorAll('.inner-page > *, .auth-page > *');
-    gsap.from(bloques, { y: M.dist * 0.6, opacity: 0, duration: M.dur * 0.8, ease: M.ease, stagger: 0.06, clearProps: 'transform,opacity' });
-  }, []);
-  return <div ref={ref}>{children}</div>;
+function AdminOnly({ children }) {
+  const { user, loading } = useAuth();
+  if (loading) return <PanelEspera texto="Comprobando permisos…" />;
+  if (!user) return <Navigate to="/iniciar-sesion" replace />;
+  if (user.roles?.includes('administrador')) return children;
+  return <div className="p-espera" role="alert">
+    <h1 style={{ fontSize: '1.4rem' }}>Acceso restringido</h1>
+    <p>Esta página requiere una cuenta administradora autorizada.</p>
+    <Link className="btn btn-primary" to="/mi-espacio">Ir a Mi espacio</Link>
+  </div>;
 }
 
 export default function App() {
@@ -62,26 +63,32 @@ export default function App() {
     requestRefresh(60);
   }, [pathname]);
 
-  return <><Header/><main id="contenido" ref={mainRef} tabIndex={-1}><Routes>
+  const rutas = <Routes>
     <Route path="/" element={<Home/>}/>
     <Route path="/jornadas" element={<Jornadas/>}/>
     <Route path="/jornadas/:id" element={<DetalleJornada/>}/>
-    <Route path="/mis-postulaciones" element={<Private><Suave><MisPostulaciones/></Suave></Private>}/>
     <Route path="/voluntariado" element={<Voluntariado/>}/>
     <Route path="/instituciones" element={<Instituciones/>}/>
-    <Route path="/instituciones/solicitar" element={<Private><Suave><SolicitarInstitucion/></Suave></Private>}/>
-    <Route path="/panel-institucional" element={<Private><Suave><PanelInstitucional/></Suave></Private>}/>
-    <Route path="/admin" element={<AdminOnly><Suave><AdminPanel/></Suave></AdminOnly>}/>
-    <Route path="/admin/instituciones" element={<AdminOnly><Suave><AdminPanel inicial="instituciones"/></Suave></AdminOnly>}/>
     <Route path="/seguimiento" element={<Seguimiento/>}/>
     <Route path="/iniciar-sesion" element={<Login/>}/>
     <Route path="/registro" element={<Registro/>}/>
     <Route path="/verificar-correo" element={<VerificarCorreo/>}/>
     <Route path="/olvide-contrasena" element={<OlvideContrasena/>}/>
     <Route path="/restablecer-contrasena" element={<RestablecerContrasena/>}/>
-    <Route path="/verificar-telefono" element={<Private><Suave><VerificarTelefono/></Suave></Private>}/>
-    <Route path="/mi-espacio" element={<Private><Suave><MiEspacio/></Suave></Private>}/>
-    <Route path="/mi-perfil-voluntario" element={<Private><Suave><PerfilVoluntario/></Suave></Private>}/>
+    {/* Panel de voluntariado: el menú lateral se queda montado entre estas páginas */}
+    <Route element={<Private><VoluntarioShell/></Private>}>
+      <Route path="/mi-espacio" element={<MiEspacio/>}/>
+      <Route path="/mis-postulaciones" element={<MisPostulaciones/>}/>
+      <Route path="/mi-perfil-voluntario" element={<PerfilVoluntario/>}/>
+      <Route path="/verificar-telefono" element={<VerificarTelefono/>}/>
+      <Route path="/instituciones/solicitar" element={<SolicitarInstitucion/>}/>
+    </Route>
+    <Route path="/panel-institucional" element={<Private><PanelInstitucional/></Private>}/>
+    <Route path="/admin" element={<AdminOnly><AdminPanel/></AdminOnly>}/>
+    <Route path="/admin/instituciones" element={<AdminOnly><AdminPanel inicial="instituciones"/></AdminOnly>}/>
     <Route path="*" element={<Navigate to="/" replace/>}/>
-  </Routes></main><Footer/></>;
+  </Routes>;
+
+  if (esPanel(pathname)) return rutas;
+  return <><Header/><main id="contenido" ref={mainRef} tabIndex={-1}>{rutas}</main><Footer/></>;
 }

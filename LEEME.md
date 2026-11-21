@@ -4,6 +4,79 @@ Rediseño completo del sitio público (Inicio, Jornadas, Detalle, Voluntariado, 
 
 ---
 
+## Incremento 9: paneles con menú lateral (voluntariado, institución y administración)
+
+Solo cambió el diseño: **no se tocó el backend ni la base de datos** y cada botón usa las mismas rutas de la API que antes. Las tres áreas privadas ahora son paneles con menú lateral, sin la cabecera ni el pie del sitio público.
+
+### Qué cambió
+
+| Panel | Ruta | Qué muestra |
+|---|---|---|
+| Voluntariado | `/mi-espacio` (y Mis postulaciones, Mi perfil, Seguridad, Registrar institución) | Postulaciones activas, próxima jornada, comunidades, perfil completo (%), mapa de oportunidades por región, mis jornadas en curso, agenda, perfil, seguridad y recomendaciones (primero las de la región de tu comunidad) |
+| Institución | `/panel-institucional` con vistas `?vista=jornadas`, `postulaciones`, `nueva`, `seguimiento` | Bienvenida con regiones y próxima jornada, jornadas activas, postulaciones pendientes, cupo cubierto, tabla de jornadas con “Gestionar”, postulaciones recientes con “Aceptar” y próximas fechas |
+| Administración | `/admin` con vistas `?vista=solicitudes`, `instituciones`, `usuarios`, `jornadas` | Instituciones, usuarios, jornadas y cupo cubierto; mapa por región con filtro; validaciones pendientes; estado real del servidor (API, PostgreSQL, correo y Google) y cuentas que requieren atención |
+
+**Menú lateral:** en escritorio se contrae a una columna de íconos (se recuerda en ese navegador); en celular y tableta se desliza desde la izquierda con el botón ☰, se cierra con Esc, con un toque afuera o al elegir una sección, y mientras está abierto el resto de la página no recibe foco. Si una persona tiene varios roles, abajo aparece “Cambiar de panel”.
+
+**Barra superior:** búsqueda (jornadas en voluntariado e institución, usuarios en administración), campana con el número de pendientes, fecha y avatar con iniciales.
+
+### Archivos
+
+| Archivo | Para qué sirve |
+|---|---|
+| `src/components/panel/PanelLayout.jsx` | Menú lateral, barra superior y pantalla de espera, compartidos por los tres paneles |
+| `src/components/panel/VoluntarioShell.jsx` | Panel de voluntariado: el menú se queda montado al navegar entre sus páginas |
+| `src/components/panel/MapaOaxaca.jsx` | Mapa esquemático de las 8 regiones con marcadores en forma de rombo |
+| `src/components/panel/piezas.jsx` | Indicadores, barra-hilo, minigráfica, medio anillo, etiquetas de estado, avatar, fechas |
+| `src/panel.css` | Todo el estilo de los paneles |
+
+### Valores de diseño
+
+| Elemento | Valor | Contraste |
+|---|---|---|
+| Menú lateral | `#0a3b33` (verde-900) | Texto `#e8f3ee`: 10.9:1 · texto tenue `#9fbdb3`: 6.1:1 |
+| Sección activa | Fondo `#e4f4ed`, texto `#0a3b33`, rombo ocre a la izquierda | 10.9:1 |
+| Lienzo / tarjetas | `#f6f4ee` / blanco, borde `#e3e7df`, radio 16 px | |
+| Avisos en el menú | `#a8432a` con texto blanco | 6.0:1 |
+| Etiqueta “aviso” | Fondo `#fbf0dc`, texto `#86500b` | 5.9:1 |
+| Ancho del menú | 272 px (contraído 80 px; celular hasta 300 px) | |
+| Movimiento | El isotipo se teje al entrar (0.95 s, `power3.out`), las secciones del menú y las tarjetas se posan en cascada (0.05 s), los números cuentan, las barras-hilo crecen y los rombos del mapa se posan | Con “Reducir movimiento” nada se mueve |
+
+Elementos propios: rombo tejido (firma del menú y marcador activo), barra de avance con nudo de rombo, marcadores del mapa en rombo, curvas de nivel en el menú y en la bienvenida, olas punteadas en la costa del mapa.
+
+### De dónde sale cada dato
+
+Todo sale de la API existente; no hay cifras de ejemplo. Lo que calcula el navegador:
+- **Perfil completo:** 6 datos (perfil guardado, comunidad, habilidades, lenguas, presentación y teléfono verificado).
+- **Cupo cubierto:** personas aceptadas ÷ cupo de las jornadas publicadas.
+- **Minigráficas:** jornadas por mes de inicio, e instituciones y usuarios acumulados en los últimos seis meses.
+- **Postulaciones recientes (institución):** se consultan las jornadas que tienen pendientes.
+- **Estado de la plataforma:** `/api/health` (con el tiempo de respuesta medido) y `/api/auth/proveedores`.
+
+### Por validar (decisiones que tomé por ti)
+
+1. Las maquetas traían métricas que la plataforma no registra (**horas aportadas, personas alfabetizadas, materiales didácticos, sincronización IEEA/SEP, copias de seguridad, reportes**). No las inventé: las cambié por datos reales (postulaciones, cupo cubierto, perfil completo, estado del servidor). Si quieres esas secciones, hace falta guardar esos datos primero.
+2. **“Materiales”, “Comunidades” y “Configuración”** del menú de las maquetas no existen todavía; no puse botones que no hagan nada.
+3. **Mapa esquemático:** las formas de las regiones son aproximadas y lo dice debajo (“no a escala”).
+4. **Saludo** según la hora de Oaxaca (“Buenos días / Buenas tardes / Buenas noches”).
+5. En Solicitar institución quité dos frases que decían que la revisión administrativa aún no existía (ya existe).
+
+### Pendiente
+
+- [ ] Probar en un celular real (revisado con Chrome sin ventana a 375 × 812 y 1440 × 900 con las tres cuentas de demostración: sin desbordes ni errores de consola).
+
+### Publicar en el VPS
+
+Solo cambió el frontend, así que basta con traer el código y compilar (no hace falta migrar ni reiniciar la API):
+
+```bash
+cd /var/www/nexo-nuu && git fetch origin feat/demo-publica && git reset --hard origin/feat/demo-publica && cd frontend && npm ci && npm run build
+```
+
+nginx sirve `frontend/dist` directamente; los archivos nuevos llevan otro nombre, así que el navegador no se queda con la versión anterior.
+
+---
+
 ## Incremento 8: plataforma funcional (cuentas, correo real, Google, administración e instituciones)
 
 ### Pasos una sola vez (en `backend`)
