@@ -14,6 +14,7 @@ import { Kpi, Tarjeta, Chip, EstadoJornada, EstadoPostulacion, Vacio, Mensajes, 
 import { useMotion } from '../motion/useMotion.js';
 import { scrollToTop, scrollToElement } from '../motion/motion.js';
 import { REGIONES } from '../data/fuentes.js';
+import { navInstitucion } from '../components/panel/navegacion.js';
 
 const empty = { titulo: '', descripcion: '', comunidadId: '', inicio: '', fin: '', cupo: 15, esDemo: false };
 const timeToIso = (local) => new Date(local).toISOString();
@@ -185,15 +186,7 @@ export default function PanelInstitucional() {
     && (!q || normal(`${j.titulo} ${j.comunidad} ${j.municipio} ${j.region || ''}`).includes(q)));
   const jSel = candidatas.find((j) => String(j.id) === jPost);
 
-  const nav = [
-    { to: BASE, label: 'Panel general', icon: 'grid', activo: vista === 'general' },
-    { to: `${BASE}?vista=jornadas`, label: 'Jornadas', icon: 'calendar', activo: vista === 'jornadas', badge: publicadas.length ? `${publicadas.length} ${publicadas.length === 1 ? 'activa' : 'activas'}` : null },
-    { to: `${BASE}?vista=postulaciones`, label: 'Postulaciones', icon: 'inbox', activo: vista === 'postulaciones', badge: pendientesTotal ? String(pendientesTotal) : null, badgeSr: `${pendientesTotal} por revisar`, tono: 'alerta' },
-    { to: `${BASE}?vista=nueva`, label: 'Nueva jornada', icon: 'plus', activo: vista === 'nueva' },
-    { to: `${BASE}?vista=seguimiento`, label: 'Seguimiento', icon: 'follow', activo: vista === 'seguimiento' },
-    { to: '/instituciones/solicitar', label: 'Solicitudes institucionales', icon: 'building', activo: false },
-    { to: '/jornadas', label: 'Jornadas públicas', icon: 'calendar', externo: true, activo: false },
-  ];
+  const nav = navInstitucion({ vista, publicadas: publicadas.length, pendientes: pendientesTotal });
   const identidad = current ? <>
     <div className="p-ident">
       <span className="p-ident-logo" aria-hidden="true">{iniciales(current.nombre)}</span>
@@ -437,7 +430,7 @@ export default function PanelInstitucional() {
   // Se llaman como funciones (no como <Componente/>) para no desmontar formularios ni estados internos en cada cambio.
   const vistaActual = { general: VistaGeneral, jornadas: VistaJornadas, postulaciones: VistaPostulaciones, nueva: VistaNueva, seguimiento: VistaSeguimiento }[vista];
 
-  return <PanelLayout rol="institucion" nav={current ? nav : nav.slice(5)} identidad={identidad}
+  return <PanelLayout rol="institucion" nav={current ? nav : nav.filter((i) => !i.to.startsWith(BASE))} identidad={identidad}
     titulo={VISTAS[vista]} migas={['Área institucional', current?.nombre || 'Panel institucional']}
     buscar={current ? { placeholder: 'Buscar jornadas por título o comunidad…', onSubmit: (texto) => ir('jornadas', { buscar: texto }) } : undefined}
     avisos={current ? { n: pendientesTotal, to: `${BASE}?vista=postulaciones`, label: pendientesTotal ? `${pendientesTotal} postulaciones por revisar` : 'Sin postulaciones pendientes' } : undefined}>

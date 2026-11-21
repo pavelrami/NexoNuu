@@ -18,6 +18,16 @@ Solo cambió el diseño: **no se tocó el backend ni la base de datos** y cada b
 
 **Menú lateral:** en escritorio se contrae a una columna de íconos (se recuerda en ese navegador); en celular y tableta se desliza desde la izquierda con el botón ☰, se cierra con Esc, con un toque afuera o al elegir una sección, y mientras está abierto el resto de la página no recibe foco. Si una persona tiene varios roles, abajo aparece “Cambiar de panel”.
 
+**Cada rol entra a su panel.** Al iniciar sesión (con correo o con Google) cada cuenta va directo a su panel. Si una cuenta tiene varios roles, manda el más alto:
+
+| Rol de la cuenta | Entra a | Puede abrir |
+|---|---|---|
+| Administración | `/admin` | Administración, Seguridad y, si también representa a una institución, el panel institucional |
+| Institución (representante autorizado) | `/panel-institucional` | Panel institucional, Solicitudes institucionales y Seguridad |
+| Voluntariado | `/mi-espacio` | Mi espacio, Mis postulaciones, Mi perfil, Seguridad y Registrar institución |
+
+“Mi espacio”, “Mis postulaciones” y “Mi perfil” existen solo para voluntariado: si otra cuenta abre esas direcciones, vuelve a su panel. Lo mismo pasa con `/admin` y `/panel-institucional` para quien no tiene ese rol. La dirección `/panel` lleva a cada quien a su panel (la usa el regreso del acceso con Google). La lógica vive en `src/components/panel/navegacion.js` y `src/components/panel/CuentaShell.jsx`. No cambió el backend: los permisos siguen validándose en el servidor.
+
 **Barra superior:** búsqueda (jornadas en voluntariado e institución, usuarios en administración), campana con el número de pendientes, fecha y avatar con iniciales.
 
 ### Archivos
@@ -25,7 +35,8 @@ Solo cambió el diseño: **no se tocó el backend ni la base de datos** y cada b
 | Archivo | Para qué sirve |
 |---|---|
 | `src/components/panel/PanelLayout.jsx` | Menú lateral, barra superior y pantalla de espera, compartidos por los tres paneles |
-| `src/components/panel/VoluntarioShell.jsx` | Panel de voluntariado: el menú se queda montado al navegar entre sus páginas |
+| `src/components/panel/CuentaShell.jsx` | Marco de las páginas de cuenta (Mi espacio, Seguridad…) según el rol; el menú se queda montado al navegar |
+| `src/components/panel/navegacion.js` | Rol principal de cada cuenta, a qué panel entra y las secciones de cada menú |
 | `src/components/panel/MapaOaxaca.jsx` | Mapa esquemático de las 8 regiones con marcadores en forma de rombo |
 | `src/components/panel/piezas.jsx` | Indicadores, barra-hilo, minigráfica, medio anillo, etiquetas de estado, avatar, fechas |
 | `src/panel.css` | Todo el estilo de los paneles |
@@ -60,6 +71,7 @@ Todo sale de la API existente; no hay cifras de ejemplo. Lo que calcula el naveg
 3. **Mapa esquemático:** las formas de las regiones son aproximadas y lo dice debajo (“no a escala”).
 4. **Saludo** según la hora de Oaxaca (“Buenos días / Buenas tardes / Buenas noches”).
 5. En Solicitar institución quité dos frases que decían que la revisión administrativa aún no existía (ya existe).
+6. **Rol más alto manda:** toda cuenta nueva empieza como voluntariado. Cuando la administración la autoriza como representante, desde su siguiente ingreso entra al panel institucional y ya no ve Mi espacio ni Mis postulaciones (sus postulaciones siguen guardadas). Si prefieres que esas cuentas conserven también Mi espacio, se cambia en `navegacion.js`.
 
 ### Pendiente
 

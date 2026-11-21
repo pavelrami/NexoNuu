@@ -14,6 +14,7 @@ import { Kpi, Tarjeta, Chip, EstadoJornada, Vacio, Mensajes, PanelCabeza, Filtro
 import { useMotion } from '../motion/useMotion.js';
 import { scrollToTop } from '../motion/motion.js';
 import '../admin-instituciones.css';
+import { navAdmin } from '../components/panel/navegacion.js';
 
 const ESTADOS = {
   pendiente: ['En revisión', 'aviso'], verificada: ['Verificada', 'ok'], rechazada: ['Rechazada', 'alerta'], activo: ['Activo', 'ok'],
@@ -114,14 +115,7 @@ export default function AdminPanel({ inicial = 'resumen' }) {
   const contarJ = (e) => jornadas.filter((j) => j.estado === e).length;
   const jornadasVis = jornadas.filter((j) => (filtroJ === 'todas' || j.estado === filtroJ) && (!region || claveRegion(j.region || '') === region));
 
-  const nav = [
-    { to: '/admin', label: 'Resumen global', icon: 'grid', activo: vista === 'resumen' },
-    { to: '/admin?vista=solicitudes', label: 'Solicitudes', icon: 'flag', activo: vista === 'solicitudes', badge: nSolicitudes ? String(nSolicitudes) : null, badgeSr: `${nSolicitudes} pendientes`, tono: 'alerta' },
-    { to: '/admin?vista=instituciones', label: 'Instituciones', icon: 'building', activo: vista === 'instituciones', badge: resumen ? String(resumen.instituciones_verificadas) : null, badgeSr: resumen ? plural(resumen.instituciones_verificadas, 'verificada', 'verificadas') : '' },
-    { to: '/admin?vista=usuarios', label: 'Usuarios', icon: 'users', activo: vista === 'usuarios', badge: resumen ? String(resumen.usuarios) : null, badgeSr: resumen ? plural(resumen.usuarios, 'cuenta', 'cuentas') : '' },
-    { to: '/admin?vista=jornadas', label: 'Jornadas', icon: 'calendar', activo: vista === 'jornadas', badge: resumen ? `${resumen.jornadas_publicadas} publicadas` : null },
-    { to: '/jornadas', label: 'Jornadas públicas', icon: 'globe', externo: true, activo: false },
-  ];
+  const nav = navAdmin({ vista, resumen, solicitudes: nSolicitudes });
   const identidad = <div className="p-ident">
     <span className="p-ident-logo p-ident-logo--admin" aria-hidden="true"><Icon name="shield" size={20} /></span>
     <span className="p-ident-txt"><strong>Administración general</strong><small><i className="p-punto" aria-hidden="true" /> Permisos de administración</small></span>

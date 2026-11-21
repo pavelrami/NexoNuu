@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { getInstitutionRequests, submitInstitutionRequest } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import '../instituciones-solicitudes.css';
+import { panelDe } from '../components/panel/navegacion.js';
 
 const initial = { nombre: '', tipo: '', descripcion: '', sitioWeb: '' };
 const estados = { pendiente:'En revisión', verificada:'Verificada', rechazada:'Rechazada' };
@@ -80,7 +81,7 @@ export default function SolicitarInstitucion() {
           <strong>¿Qué ocurrirá después?</strong>
           <p>1. Se registra tu solicitud.</p><p>2. Un administrador revisará la institución.</p><p>3. La representación necesitará aprobación por separado.</p>
         </div>
-        <Link className="btn btn-outline" to="/mi-espacio">Volver a Mi espacio</Link>
+        <Link className="btn btn-outline" to={panelDe(user)}>Volver a mi panel</Link>
       </aside>
     </div>
   </section>;

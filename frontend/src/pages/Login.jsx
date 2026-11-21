@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { resendVerification } from '../api.js';
 import AuthLayout, { CampoPassword } from '../components/AuthLayout.jsx';
 import GoogleButton from '../components/GoogleButton.jsx';
+import { panelDe } from '../components/panel/navegacion.js';
 import { Icon } from '../components/Icons.jsx';
 
 const ERRORES_GOOGLE = {
@@ -28,10 +29,10 @@ export default function Login() {
   const [needsEmail, setNeedsEmail] = useState(false);
   const [notice, setNotice] = useState('');
   if (loading) return <section className="container inner-page"><p role="status">Comprobando sesión…</p></section>;
-  if (user) return <Navigate to="/mi-espacio" replace/>;
+  if (user) return <Navigate to={panelDe(user)} replace/>;
   async function submit(event) {
     event.preventDefault(); setBusy(true); setError(''); setNotice(''); setNeedsEmail(false);
-    try { await login(correo, password); setPassword(''); navigate('/mi-espacio'); }
+    try { const u = await login(correo, password); setPassword(''); navigate(panelDe(u), { replace: true }); }
     catch (e) { setError(e.message); setNeedsEmail(e.code === 'CORREO_PENDIENTE'); }
     finally { setBusy(false); }
   }

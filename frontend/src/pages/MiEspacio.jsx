@@ -86,10 +86,6 @@ export default function MiEspacio() {
     .sort((a, b) => Number(claveRegion(b.region || '') === miRegion && Boolean(miRegion)) - Number(claveRegion(a.region || '') === miRegion && Boolean(miRegion))
       || new Date(a.inicio) - new Date(b.inicio))
     .slice(0, 3);
-  const otros = [
-    roles.includes('representante') && { to: '/panel-institucional', t: 'Panel institucional', d: 'Publica jornadas y revisa postulaciones.', i: 'building' },
-    roles.includes('administrador') && { to: '/admin', t: 'Administración', d: 'Solicitudes, instituciones, usuarios y jornadas.', i: 'shield' },
-  ].filter(Boolean);
 
   return <div ref={ref}>
     <h1 className="sr-only">Mi espacio · Panel de voluntariado</h1>
@@ -198,13 +194,6 @@ export default function MiEspacio() {
           </ul>
         </Tarjeta>
 
-        {otros.length > 0 && <Tarjeta titulo="Tus otros paneles" icono="grid">
-          <ul className="p-lista">{otros.map((o) => <li key={o.to}>
-            <span className="p-icono-t"><Icon name={o.i} size={18} /></span>
-            <span className="p-lista-txt"><strong>{o.t}</strong><small>{o.d}</small></span>
-            <span className="p-lista-acc"><Link className="btn btn-primary btn-sm" to={o.to}>Abrir</Link></span>
-          </li>)}</ul>
-        </Tarjeta>}
       </div>
     </div>
 

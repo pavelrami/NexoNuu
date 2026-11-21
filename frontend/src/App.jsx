@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef } from 'react';
-import { Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Header from './components/Header.jsx';
 import Footer from './components/Footer.jsx';
 import Home from './pages/Home.jsx';
@@ -20,14 +20,15 @@ import PerfilVoluntario from './pages/PerfilVoluntario.jsx';
 import VerificarTelefono from './pages/VerificarTelefono.jsx';
 import OlvideContrasena from './pages/OlvideContrasena.jsx';
 import RestablecerContrasena from './pages/RestablecerContrasena.jsx';
-import VoluntarioShell from './components/panel/VoluntarioShell.jsx';
+import CuentaShell, { IrAlPanel, SoloRepresentantes, SoloVoluntariado } from './components/panel/CuentaShell.jsx';
+import { panelDe } from './components/panel/navegacion.js';
 import { PanelEspera } from './components/panel/PanelLayout.jsx';
 import { useAuth } from './context/AuthContext.jsx';
 import { gsap, RM, initLenis, requestRefresh, safe, scrollToTop, watchLayout } from './motion/motion.js';
 import './panel.css';
 
 // Rutas privadas que se muestran como panel (menú lateral, sin la cabecera pública).
-const PANEL = ['/mi-espacio', '/mis-postulaciones', '/mi-perfil-voluntario', '/verificar-telefono', '/instituciones/solicitar', '/panel-institucional', '/admin'];
+const PANEL = ['/panel', '/mi-espacio', '/mis-postulaciones', '/mi-perfil-voluntario', '/verificar-telefono', '/instituciones/solicitar', '/panel-institucional', '/admin'];
 const esPanel = (p) => PANEL.some((r) => p === r || p.startsWith(`${r}/`));
 
 function Private({ children }) {
@@ -40,12 +41,8 @@ function AdminOnly({ children }) {
   const { user, loading } = useAuth();
   if (loading) return <PanelEspera texto="Comprobando permisos…" />;
   if (!user) return <Navigate to="/iniciar-sesion" replace />;
-  if (user.roles?.includes('administrador')) return children;
-  return <div className="p-espera" role="alert">
-    <h1 style={{ fontSize: '1.4rem' }}>Acceso restringido</h1>
-    <p>Esta página requiere una cuenta administradora autorizada.</p>
-    <Link className="btn btn-primary" to="/mi-espacio">Ir a Mi espacio</Link>
-  </div>;
+  // Sin permisos de administración: cada quien vuelve a su propio panel.
+  return user.roles?.includes('administrador') ? children : <Navigate to={panelDe(user)} replace />;
 }
 
 export default function App() {
@@ -75,15 +72,18 @@ export default function App() {
     <Route path="/verificar-correo" element={<VerificarCorreo/>}/>
     <Route path="/olvide-contrasena" element={<OlvideContrasena/>}/>
     <Route path="/restablecer-contrasena" element={<RestablecerContrasena/>}/>
-    {/* Panel de voluntariado: el menú lateral se queda montado entre estas páginas */}
-    <Route element={<Private><VoluntarioShell/></Private>}>
-      <Route path="/mi-espacio" element={<MiEspacio/>}/>
-      <Route path="/mis-postulaciones" element={<MisPostulaciones/>}/>
-      <Route path="/mi-perfil-voluntario" element={<PerfilVoluntario/>}/>
+    {/* Al entrar, cada cuenta va al panel de su rol */}
+    <Route path="/panel" element={<Private><IrAlPanel/></Private>}/>
+    {/* Páginas de cuenta: el menú lateral se queda montado entre ellas.
+        Mi espacio, Mis postulaciones y Mi perfil son solo de voluntariado. */}
+    <Route element={<Private><CuentaShell/></Private>}>
+      <Route path="/mi-espacio" element={<SoloVoluntariado><MiEspacio/></SoloVoluntariado>}/>
+      <Route path="/mis-postulaciones" element={<SoloVoluntariado><MisPostulaciones/></SoloVoluntariado>}/>
+      <Route path="/mi-perfil-voluntario" element={<SoloVoluntariado><PerfilVoluntario/></SoloVoluntariado>}/>
       <Route path="/verificar-telefono" element={<VerificarTelefono/>}/>
       <Route path="/instituciones/solicitar" element={<SolicitarInstitucion/>}/>
     </Route>
-    <Route path="/panel-institucional" element={<Private><PanelInstitucional/></Private>}/>
+    <Route path="/panel-institucional" element={<Private><SoloRepresentantes><PanelInstitucional/></SoloRepresentantes></Private>}/>
     <Route path="/admin" element={<AdminOnly><AdminPanel/></AdminOnly>}/>
     <Route path="/admin/instituciones" element={<AdminOnly><AdminPanel inicial="instituciones"/></AdminOnly>}/>
     <Route path="*" element={<Navigate to="/" replace/>}/>

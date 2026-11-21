@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { phoneStatus, requestPhoneCode, verifyPhoneCode } from '../api.js';
+import { useAuth } from '../context/AuthContext.jsx';
+import { panelDe } from '../components/panel/navegacion.js';
 
 export default function VerificarTelefono() {
+  const { user } = useAuth();
   const [status, setStatus] = useState(null);
   const [telefono, setTelefono] = useState('');
   const [codigo, setCodigo] = useState('');
@@ -47,7 +50,7 @@ export default function VerificarTelefono() {
         <h2>Teléfono verificado</h2>
         <p className="auth-success" role="status">{notice || 'Tu número ya está verificado.'}</p>
         <p>Teléfono: {status?.telefono}</p>
-        <Link to="/mi-espacio" className="btn btn-primary">Regresar a Mi espacio</Link>
+        <Link to={panelDe(user)} className="btn btn-primary">Regresar a mi panel</Link>
       </> : <>
         <h2>{step === 'numero' ? 'Registrar número' : 'Confirmar código'}</h2>
         {step === 'numero' ? <form className="auth-form" onSubmit={request}>

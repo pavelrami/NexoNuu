@@ -3,6 +3,7 @@ import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import Brand, { Isotipo } from './Brand.jsx';
 import { Icon } from './Icons.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
+import { panelDe, rolPrincipal, NOMBRE_PANEL } from './panel/navegacion.js';
 import { gsap, M, RM, lockScroll, drawPrep, safe, ROMBO_ABIERTO } from '../motion/motion.js';
 
 const links = [
@@ -159,7 +160,7 @@ export default function Header() {
           </form>}
         </div>
         {user ? <>
-          <Link to="/mi-espacio" className="header-login"><Icon name="user" size={17} /> Mi espacio</Link>
+          <Link to={panelDe(user)} className="header-login"><Icon name="user" size={17} /> {NOMBRE_PANEL[rolPrincipal(user)]}</Link>
           <button className="header-logout" onClick={exit} disabled={leaving}>{leaving ? 'Saliendo…' : 'Salir'}</button>
         </> : <Link to="/iniciar-sesion" className="header-login">Iniciar sesión</Link>}
         <button ref={menuBtnRef} className="mobile-menu icon-btn" aria-label={opened ? 'Cerrar menú' : 'Abrir menú'}
@@ -180,9 +181,9 @@ export default function Header() {
         </nav>
         <div className="sheet-item sheet-actions">
           {user ? <>
-            <Link className="btn btn-primary" to="/mi-espacio" onClick={() => setOpened(false)}>Mi espacio</Link>
-            {esRepresentante && <Link className="btn btn-ghost-light" to="/panel-institucional" onClick={() => setOpened(false)}>Panel institucional</Link>}
-            {esAdmin && <Link className="btn btn-ghost-light" to="/admin" onClick={() => setOpened(false)}>Administración</Link>}
+            <Link className="btn btn-primary" to={panelDe(user)} onClick={() => setOpened(false)}>{NOMBRE_PANEL[rolPrincipal(user)]}</Link>
+            {esRepresentante && rolPrincipal(user) !== 'institucion' && <Link className="btn btn-ghost-light" to="/panel-institucional" onClick={() => setOpened(false)}>Panel institucional</Link>}
+            {esAdmin && rolPrincipal(user) !== 'admin' && <Link className="btn btn-ghost-light" to="/admin" onClick={() => setOpened(false)}>Administración</Link>}
             <button type="button" className="btn btn-ghost-light" onClick={exit} disabled={leaving}>{leaving ? 'Saliendo…' : 'Cerrar sesión'}</button>
           </> : <>
             <Link className="btn btn-light" to="/iniciar-sesion" onClick={() => setOpened(false)}>Iniciar sesión</Link>

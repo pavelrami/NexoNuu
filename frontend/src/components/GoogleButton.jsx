@@ -23,7 +23,7 @@ function LogoGoogle() {
 }
 
 // Botón "Continuar con Google". Si el servidor aún no tiene credenciales de Google, lo explica en lugar de fallar.
-export default function GoogleButton({ volver = '/mi-espacio', texto = 'Continuar con Google' }) {
+export default function GoogleButton({ volver = '/panel', texto = 'Continuar con Google' }) {
   const proveedores = useProveedores();
   const [aviso, setAviso] = useState(false);
   const listo = proveedores?.google === true;

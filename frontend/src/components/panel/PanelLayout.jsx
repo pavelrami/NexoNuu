@@ -96,7 +96,6 @@ export default function PanelLayout({ rol, nav = [], identidad, titulo, migas = 
 
   const roles = user?.roles || [];
   const otros = [
-    rol !== 'voluntario' && { to: '/mi-espacio', label: 'Mi espacio', icon: 'user' },
     rol !== 'institucion' && roles.includes('representante') && { to: '/panel-institucional', label: 'Panel institucional', icon: 'building' },
     rol !== 'admin' && roles.includes('administrador') && { to: '/admin', label: 'Administración', icon: 'shield' },
   ].filter(Boolean);
