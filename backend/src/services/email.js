@@ -136,3 +136,17 @@ export function sendApplicationDecisionEmail(to, { nombre, jornada, estado, inst
     },
   });
 }
+
+export function sendInstitutionDecisionEmail(to, { nombre, institucion, aprobada, motivo }) {
+  return enviarCorreo({
+    to, etiqueta: 'INSTITUCION', subject: aprobada ? `Tu institución fue verificada · ${institucion}` : `Revisión de tu solicitud · ${institucion}`,
+    contenido: {
+      titulo: aprobada ? '¡Tu institución fue verificada!' : 'Tu solicitud institucional no fue aprobada',
+      saludo: nombre ? `Hola, ${nombre}:` : 'Hola:',
+      parrafos: aprobada
+        ? [`La administración de Nexo Ñuu verificó a «${institucion}» y te autorizó como su representante.`, 'Tu cuenta ahora es institucional: desde tu panel puedes publicar jornadas y revisar a las personas que se postulan. Cierra sesión y vuelve a entrar para ver tu nuevo panel.']
+        : [`La administración revisó la solicitud de «${institucion}» y no pudo aprobarla.`, motivo ? `Motivo: ${motivo}` : 'Puedes enviar una nueva solicitud con información más completa.'],
+      boton: { texto: aprobada ? 'Abrir mi panel institucional' : 'Ver mis solicitudes', url: `${APP_URL()}${aprobada ? '/panel-institucional' : '/instituciones/solicitar'}` },
+    },
+  });
+}

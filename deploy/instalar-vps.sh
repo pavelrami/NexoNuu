@@ -125,6 +125,8 @@ server {
 EOF
 ln -sf /etc/nginx/sites-available/nexo-nuu /etc/nginx/sites-enabled/nexo-nuu
 rm -f /etc/nginx/sites-enabled/default
+# Oculta la versión de nginx en todas las respuestas, también en sus páginas de error.
+sed -i 's/^\s*#\s*server_tokens off;/\tserver_tokens off;/' /etc/nginx/nginx.conf
 nginx -t && systemctl reload nginx
 
 paso "8/8 Firewall y HTTPS"

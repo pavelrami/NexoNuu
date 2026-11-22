@@ -3,6 +3,7 @@ import { pool } from '../db.js';
 import { readCookie, tokenHash } from '../lib/security.js';
 import { sameOriginWrite, limitRequests } from '../lib/limits.js';
 import { validateDecision, validId } from '../lib/adminDecisions.js';
+import { sendInstitutionDecisionEmail } from '../services/email.js';
 
 const router=Router();
 router.use((_req,res,next)=>{res.set('Cache-Control','no-store');if(!pool)return res.status(503).json({code:'SIN_BASE',message:'Base no configurada.'});next();});
@@ -49,11 +50,34 @@ router.patch('/instituciones/:id/decision',limitRequests({prefix:'admin-instituc
     if(own.rowCount){await client.query('ROLLBACK');return res.status(403).json({message:'No puedes revisar tu propia solicitud.'});}
     const approved=d.accion==='aprobar';
     await client.query('UPDATE instituciones SET estado_verificacion=$1 WHERE id=$2',[approved?'verificada':'rechazada',req.params.id]);
-    if(!approved)await client.query("UPDATE institucion_usuario SET estado='revocado' WHERE institucion_id=$1 AND estado='pendiente'",[req.params.id]);
+    // Quien solicitó la institución (cuenta activa y con correo verificado).
+    const solicitantes=(await client.query(`SELECT u.id,u.nombre,u.correo FROM institucion_usuario iu JOIN usuarios u ON u.id=iu.usuario_id
+      WHERE iu.institucion_id=$1 AND iu.estado='pendiente' AND u.estado='activo' AND u.correo_verificado_en IS NOT NULL`,[req.params.id])).rows;
+    if(approved){
+      // Un solo paso: la cuenta pasa de voluntariado a institución (rol representante).
+      for(const s of solicitantes){
+        await client.query("UPDATE institucion_usuario SET estado='activo' WHERE institucion_id=$1 AND usuario_id=$2",[req.params.id,s.id]);
+        await client.query(`INSERT INTO usuario_rol(usuario_id,rol_id) SELECT $1,id FROM roles WHERE codigo='representante' ON CONFLICT DO NOTHING`,[s.id]);
+        await client.query(`DELETE FROM usuario_rol WHERE usuario_id=$1 AND rol_id=(SELECT id FROM roles WHERE codigo='voluntario')`,[s.id]);
+        // Sus postulaciones pendientes como voluntario se retiran: ya no participa como voluntariado.
+        await client.query(`UPDATE postulaciones SET estado='retirada',actualizada_en=now() WHERE voluntario_id=$1 AND estado='pendiente'`,[s.id]);
+        await client.query(`INSERT INTO decisiones_institucionales(institucion_id,usuario_objetivo_id,administrador_id,accion,motivo)
+          VALUES($1,$2,$3,'autorizar_representante',$4)`,[req.params.id,s.id,req.adminUserId,d.motivo]);
+      }
+    } else {
+      await client.query("UPDATE institucion_usuario SET estado='revocado' WHERE institucion_id=$1 AND estado='pendiente'",[req.params.id]);
+    }
     await client.query(`INSERT INTO decisiones_institucionales(institucion_id,administrador_id,accion,motivo)
       VALUES($1,$2,$3,$4)`,[req.params.id,req.adminUserId,approved?'verificar_institucion':'rechazar_institucion',d.motivo]);
+    const nombreInst=(await client.query('SELECT nombre FROM instituciones WHERE id=$1',[req.params.id])).rows[0].nombre;
     await client.query('COMMIT');
-    res.json({message:approved?'Institucion verificada. El representante sigue pendiente.':'Solicitud rechazada.',estado:approved?'verificada':'rechazada'});
+    res.json({message:approved
+      ?(solicitantes.length?'Institución verificada. Quien la solicitó ya tiene el rol de institución (se le retiró el de voluntariado).':'Institución verificada. No había una persona solicitante activa para autorizar.')
+      :'Solicitud rechazada.',estado:approved?'verificada':'rechazada'});
+    for(const s of solicitantes){
+      sendInstitutionDecisionEmail(s.correo,{nombre:s.nombre,institucion:nombreInst,aprobada:approved,motivo:approved?'':d.motivo})
+        .catch(e=>console.error('No se pudo avisar la decision institucional:',e.message));
+    }
   }catch(e){await client.query('ROLLBACK').catch(()=>{});console.error('Error decision admin:',e.code||e.message);res.status(500).json({message:'No se pudo registrar la decision.'});}
   finally{client.release();}
 });
@@ -85,10 +109,14 @@ router.patch('/instituciones/:id/representantes/:usuarioId',limitRequests({prefi
     if(autorizar){
       await client.query(`INSERT INTO usuario_rol(usuario_id,rol_id)
         SELECT $1,id FROM roles WHERE codigo='representante' ON CONFLICT DO NOTHING`,[req.params.usuarioId]);
+      await client.query(`DELETE FROM usuario_rol WHERE usuario_id=$1 AND rol_id=(SELECT id FROM roles WHERE codigo='voluntario')`,[req.params.usuarioId]);
+      await client.query(`UPDATE postulaciones SET estado='retirada',actualizada_en=now() WHERE voluntario_id=$1 AND estado='pendiente'`,[req.params.usuarioId]);
     }else {
       // El rol general se retira solo si no existe ninguna representacion activa.
       await client.query(`DELETE FROM usuario_rol WHERE usuario_id=$1 AND rol_id=(SELECT id FROM roles WHERE codigo='representante')
         AND NOT EXISTS (SELECT 1 FROM institucion_usuario WHERE usuario_id=$1 AND estado='activo')`,[req.params.usuarioId]);
+      await client.query(`INSERT INTO usuario_rol(usuario_id,rol_id) SELECT $1,id FROM roles WHERE codigo='voluntario'
+        AND NOT EXISTS (SELECT 1 FROM institucion_usuario WHERE usuario_id=$1 AND estado='activo') ON CONFLICT DO NOTHING`,[req.params.usuarioId]);
     }
     await client.query(`INSERT INTO decisiones_institucionales(institucion_id,usuario_objetivo_id,administrador_id,accion,motivo)
       VALUES ($1,$2,$3,$4,$5)`,[req.params.id,req.params.usuarioId,req.adminUserId,autorizar?'autorizar_representante':'revocar_representante',d.motivo]);
@@ -205,6 +233,8 @@ router.patch('/instituciones/:id/revocar', limitRequests({ prefix: 'admin-revoca
     for (const { usuario_id } of revocados.rows) {
       await client.query(`DELETE FROM usuario_rol WHERE usuario_id=$1 AND rol_id=(SELECT id FROM roles WHERE codigo='representante')
         AND NOT EXISTS (SELECT 1 FROM institucion_usuario WHERE usuario_id=$1 AND estado='activo')`, [usuario_id]);
+      await client.query(`INSERT INTO usuario_rol(usuario_id,rol_id) SELECT $1,id FROM roles WHERE codigo='voluntario'
+        AND NOT EXISTS (SELECT 1 FROM institucion_usuario WHERE usuario_id=$1 AND estado='activo') ON CONFLICT DO NOTHING`, [usuario_id]);
     }
     await client.query("UPDATE jornadas SET postulaciones_habilitadas=FALSE WHERE institucion_id=$1 AND estado='publicada'", [req.params.id]);
     await client.query(`INSERT INTO decisiones_institucionales(institucion_id,administrador_id,accion,motivo) VALUES($1,$2,'revocar_institucion',$3)`,

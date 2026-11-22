@@ -156,6 +156,42 @@ nginx sirve `frontend/dist` directamente; los archivos nuevos llevan otro nombre
 
 ---
 
+## Incremento 9: postulaciones visibles, cambio de rol y criterios de evaluación
+
+**Qué cambió**
+- **Postularse sin perfil ya no se bloquea.** Si la cuenta voluntaria aún no tiene perfil, se crea uno básico al postularse. La institución ve la postulación de inmediato en su panel (Postulaciones).
+- **Verificar una institución es un solo paso.** Toda cuenta empieza como voluntariado. Desde su panel solicita "Registrar institución". Cuando la administración la **aprueba**, en la misma acción:
+  - la institución queda verificada;
+  - la persona solicitante queda autorizada como su representante;
+  - recibe el rol **institución** (`representante`) y pierde el de **voluntariado**;
+  - sus postulaciones pendientes como voluntaria se marcan como retiradas;
+  - recibe un correo con la decisión.
+- **Al revocar** la representación o retirar la verificación, la cuenta vuelve a ser voluntariado.
+- **El menú cambia solo** al volver a la pestaña: no hace falta cerrar sesión tras la aprobación.
+- **Registro:**
+  - campo **Confirmar contraseña**;
+  - elección "¿Cómo quieres participar?" (voluntariado o institución, con su siguiente paso);
+  - mensaje claro si el correo **ya existe** (`409 CORREO_REGISTRADO`).
+- **Cuentas no voluntarias:** una cuenta institucional o administradora ve por qué no puede postularse.
+
+**Correo con Brevo:** el `.env` del servidor usa `EMAIL_MODE=smtp`, `SMTP_HOST=smtp-relay.brevo.com` y `SMTP_PORT=587` (con 587 la conexión se cifra con STARTTLS automáticamente). `SMTP_USER` es el inicio de sesión que da Brevo y `SMTP_PASS` es la clave SMTP. **`EMAIL_FROM` debe ser un remitente verificado en Brevo** (Remitentes y dominios): si no, Brevo rechaza el envío.
+
+### Criterios de evaluación
+
+| Criterio | Cómo lo cumple Nexo Ñuu | Estado |
+|---|---|---|
+| Funcionalidad básica | El formulario pide nombre, correo, contraseña y tipo de participación. La cuenta se crea en PostgreSQL. El rol institución se otorga tras la verificación, por seguridad | Cumple |
+| Validaciones | No acepta campos vacíos. Revisa el formato del correo y que su dominio reciba mensajes, la longitud mínima de 12 caracteres y la confirmación de contraseña, tanto en el navegador como en el servidor | Cumple |
+| Duplicados | Un correo ya registrado responde "Ya existe una cuenta con ese correo" con enlaces a iniciar sesión o recuperar contraseña. Hay un índice único en `lower(correo)` | Cumple |
+| Seguridad | La contraseña se oculta al escribir (con botón para mostrarla) y se guarda cifrada con **scrypt**. La sesión usa una cookie HttpOnly y su token se guarda cifrado. Hay límite de intentos | Cumple |
+| Persistencia | El usuario aparece en Administración → Usuarios e inicia sesión después de confirmar su correo | Cumple (requiere correo configurado) |
+| Roles y permisos | Cada rol entra directo a su panel (`/mi-espacio`, `/panel-institucional`, `/admin`) con su propio menú. Las rutas se protegen en el navegador y **en el servidor**, que responde 403 si alguien escribe la URL de otro rol | Cumple |
+| Usabilidad y mensajes | Los mensajes de éxito y error están en español claro. Las decisiones piden un motivo. Hay avisos de correo enviado y estados vacíos explicados | Cumple |
+
+Prueba automática del flujo completo (cuenta nueva sin perfil → se postula → la institución la ve → solicita institución → la administración aprueba → cambia de rol): 9 de 9 comprobaciones correctas en local.
+
+---
+
 ## Incremento 8: plataforma funcional (cuentas, correo real, Google, administración e instituciones)
 
 ### Pasos una sola vez (en `backend`)

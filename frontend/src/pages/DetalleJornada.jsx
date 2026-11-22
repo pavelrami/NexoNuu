@@ -96,7 +96,9 @@ export default function DetalleJornada() {
             {j.puedePostular && <div className="detalle-postular">
               {!user
                 ? <Link className="btn btn-primary" to="/iniciar-sesion">Iniciar sesión para postularme <Icon name="arrow" size={17} /></Link>
-                : <button className="btn btn-primary" type="button" disabled={enviando || exito} onClick={enviarPostulacion}>
+                : !user.roles?.includes('voluntario')
+                  ? <p className="auth-muted">Tu cuenta es {user.roles?.includes('representante') ? 'institucional' : 'administradora'}: solo las cuentas de voluntariado pueden postularse.</p>
+                  : <button className="btn btn-primary" type="button" disabled={enviando || exito} onClick={enviarPostulacion}>
                   {enviando ? 'Enviando solicitud…' : exito ? <><Icon name="check" size={18} /> Solicitud enviada</> : (j.es_demo ? 'Simular postulación' : 'Postularme')}
                 </button>}
               {mensaje && <p role="status" className={exito ? 'auth-success' : 'auth-error'}>{mensaje}</p>}

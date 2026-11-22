@@ -419,3 +419,19 @@
 .panel-inst-toggle{justify-self:start;margin-top:10px}
 .panel-inst-manage-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .panel-inst-follow .btn{min-height:44px;padding:9px 15px;font-size:.88rem}
+
+.ok-texto{color:var(--ok)!important;font-weight:600}
+.error-texto{color:var(--error)!important;font-weight:600}
+.auth-error a{color:inherit;font-weight:700;text-decoration:underline}
+
+.rol-elegir{border:0;margin:0 0 4px;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.rol-elegir legend{font-size:.9rem;font-weight:700;color:var(--tinta);margin-bottom:8px;padding:0}
+.rol-elegir label{display:flex;gap:10px;align-items:flex-start;padding:12px;border:1.5px solid var(--linea-2);border-radius:12px;cursor:pointer;margin:0!important;font-weight:400!important}
+.rol-elegir label.is-on{border-color:var(--verde-700);background:var(--menta-50)}
+.rol-elegir input{margin-top:3px;accent-color:var(--verde-700)}
+.rol-elegir strong{display:block;font-size:.92rem}
+.rol-elegir small{display:block;font-size:.76rem;color:var(--tinta-2)}
+.rol-nota{margin:0 0 4px!important}
+@media (max-width:420px){.rol-elegir{grid-template-columns:1fr}}
+.rol-elegir input[type=radio]{width:18px!important;height:18px!important;min-height:0!important;padding:0!important;margin:2px 0 0!important;flex:none;border:0;box-shadow:none}
+.rol-elegir span{text-align:left}

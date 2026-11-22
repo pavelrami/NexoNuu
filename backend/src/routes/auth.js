@@ -38,6 +38,11 @@ auth.post('/registro', registrationLimit, async (req, res) => {
   if (typeof nombre !== 'string' || nombre.trim().length < 2 || nombre.trim().length > 140 || !validEmail(email) || !validPassword(password)) {
     return res.status(400).json({ code: 'DATOS_INVALIDOS', message: 'Indica un nombre de 2 a 140 caracteres, correo válido y contraseña de 12 a 128 caracteres.' });
   }
+  // Primero el duplicado: es el mensaje más útil para quien ya tiene cuenta.
+  const yaExiste = await pool.query('SELECT 1 FROM usuarios WHERE lower(correo)=$1 LIMIT 1', [email]).catch(() => ({ rowCount: 0 }));
+  if (yaExiste.rowCount) {
+    return res.status(409).json({ code: 'CORREO_REGISTRADO', message: 'Ya existe una cuenta con ese correo. Inicia sesión o usa “¿Olvidaste tu contraseña?”.' });
+  }
   // Solo correos que existen: el dominio debe recibir correo y después se confirma el buzón con un enlace.
   const dominio = await dominioRecibeCorreo(email);
   if (!dominio.ok) {
@@ -52,7 +57,7 @@ auth.post('/registro', registrationLimit, async (req, res) => {
     const previous = await client.query('SELECT id FROM usuarios WHERE lower(correo) = $1 LIMIT 1', [email]);
     if (previous.rowCount) {
       await client.query('ROLLBACK');
-      return res.status(202).json({ message: genericMessage });
+      return res.status(409).json({ code: 'CORREO_REGISTRADO', message: 'Ya existe una cuenta con ese correo. Inicia sesión o usa “¿Olvidaste tu contraseña?”.' });
     }
     const inserted = await client.query(`INSERT INTO usuarios (nombre, correo, password_hash, estado)
       VALUES ($1, $2, $3, 'activo') RETURNING id`, [nombre.trim(), email, passwordHash]);
@@ -64,7 +69,7 @@ auth.post('/registro', registrationLimit, async (req, res) => {
     await client.query('COMMIT');
   } catch (error) {
     await client.query('ROLLBACK').catch(() => {});
-    if (error.code === '23505') return res.status(202).json({ message: genericMessage });
+    if (error.code === '23505') return res.status(409).json({ code: 'CORREO_REGISTRADO', message: 'Ya existe una cuenta con ese correo. Inicia sesión o usa “¿Olvidaste tu contraseña?”.' });
     console.error('Error de registro:', error.code || error.message);
     return res.status(500).json({ code: 'REGISTRO_FALLIDO', message: 'No fue posible crear la cuenta. Comprueba la migración de autenticación.' });
   } finally { client.release(); }

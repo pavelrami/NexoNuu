@@ -257,7 +257,7 @@ export default function AdminPanel({ inicial = 'resumen' }) {
               {inst.sitio_web && <p><a className="fuente" href={inst.sitio_web} target="_blank" rel="noopener noreferrer">Sitio web declarado (no verificado) <Icon name="arrowUpRight" size={13} /></a></p>}
               <p className="p-nota">Solicitante: {(inst.solicitantes || []).map((p) => `${p.nombre} (${p.correo})`).join(', ') || 'sin persona vinculada'}</p>
               <div className="p-acciones">
-                <AccionConMotivo etiqueta="Aprobar institución" variante="primary" confirmar="Aprobar" ayuda="Evidencia revisada (mínimo 10 caracteres)" onConfirm={(m) => hacer(() => decideInstitution(inst.id, 'aprobar', m))} />
+                <AccionConMotivo etiqueta="Aprobar institución" variante="primary" confirmar="Aprobar" ayuda="Evidencia revisada (mínimo 10 caracteres). Al aprobar, quien la solicitó pasa de voluntariado a institución" onConfirm={(m) => hacer(() => decideInstitution(inst.id, 'aprobar', m))} />
                 <AccionConMotivo etiqueta="Rechazar" confirmar="Rechazar" peligro onConfirm={(m) => hacer(() => decideInstitution(inst.id, 'rechazar', m))} />
               </div>
             </article>)}

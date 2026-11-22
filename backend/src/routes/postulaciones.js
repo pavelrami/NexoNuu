@@ -63,7 +63,10 @@ router.post('/', limitRequests({prefix:'postular',max:12,windowMs:15*60_000}), a
     const jornada = await client.query(`SELECT j.id,j.estado,j.inicio,j.cupo,j.es_demo,j.postulaciones_habilitadas,
                     i.estado_verificacion FROM jornadas j JOIN instituciones i ON i.id=j.institucion_id
                     WHERE j.id=$1 FOR UPDATE OF j`, [id]);
-    if (!profile.rowCount) { await client.query('ROLLBACK'); return res.status(403).json({code:'PERFIL_PENDIENTE',message:'Completa tu perfil antes de postularte.'}); }
+    if (!profile.rowCount) {
+      // Perfil básico para no bloquear la postulación; la institución verá que está incompleto.
+      await client.query(`INSERT INTO perfiles_voluntario (usuario_id, disponibilidad) VALUES ($1,'variable') ON CONFLICT DO NOTHING`, [req.voluntario.id]);
+    }
     if (!canApplyToJornada(jornada.rows[0],{demo:allowDemo()})) {
       await client.query('ROLLBACK');
       return res.status(403).json({code:'JORNADA_NO_ADMITE_SOLICITUDES',message:'Esta jornada no admite postulaciones.'});
